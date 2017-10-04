@@ -21,5 +21,7 @@ before_install:
 - "./manage download-terraform"
 matrix:
   include:
-  - script: "./manage test-terraform aws/fastmail"
-  - script: "./manage test-terraform aws/vpc"
+  - env: NAME="aws/fastmail"
+    script: ./manage test-terraform $NAME
+  - env: NAME="aws/vpc"
+    script: ./manage test-terraform $NAME
