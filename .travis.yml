@@ -1,0 +1,22 @@
+sudo: required
+language: bash
+addons:
+  apt:
+    packages:
+    - bc
+    - jq
+services:
+- docker
+env:
+  global:
+  - PATH="/usr/bin:$PATH"
+  - TF_VAR_BUILD_NUMBER=${TRAVIS_JOB_NUMBER/./-}
+before_install:
+- sudo apt-get update -qq
+- sudo apt-get install -y -o Dpkg::Options::="--force-confnew" docker-ce
+- gpg --keyserver pgp.mit.edu --recv-key 0x671C330913823C5B
+- ./manage downloadTerraform
+matrix:
+  include:
+    - script: ./manage test-terraform aws/fastmail
+    - script: ./manage test-terraform aws/vpc

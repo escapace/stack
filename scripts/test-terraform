@@ -1,0 +1,127 @@
+#!/usr/bin/env bash
+#
+# vim: set ft=sh:
+#
+# @description Hello World
+# @import lang/required
+# @import console/info
+# @import console/die
+# @import console/warn
+# @import console/error
+# @import console/die
+# @import string/upper
+# @import terraform/downloadTerraform
+
+declare -A TERRAFORM_TEST
+declare -A TERRAFORM_TEST_CODE
+
+spec ()
+{
+    local name="$1"
+    local directory="$2"
+    local code=0
+
+    _ info "Running '${name}' test..."
+
+    (
+        cd "${directory}" || return 1
+
+        "${MANAGE_REPOSITORY}/vendor/terraform/terraform" init \
+            -force-copy \
+            -get=true \
+            -get-plugins=true \
+            -input=false || return 1
+
+        "${MANAGE_REPOSITORY}/vendor/terraform/terraform" apply \
+            -auto-approve=true \
+            -input=false || return 1
+    ) || code=$?
+
+    TERRAFORM_TEST_CODE["${name}"]="${code}"
+}
+
+main ()
+{
+    verbose true
+    strict true
+
+    [ -f "${MANAGE_REPOSITORY}/vendor/terraform/terraform" ] || _ die "Download terraform first: ./manage downloadTerraform"
+
+    local queue=($@)
+
+    if _ required "${TEST_SUITE}"
+    then
+        queue=(${TEST_SUITE})
+    fi
+
+    if _ required "${queue[@]}"
+    then
+        local arg
+
+        for arg in "${queue[@]}"
+        do
+            local directory="${MANAGE_REPOSITORY}/terraform/${arg}.test"
+
+            if [ -d "${directory}" ] &&
+               [[ "$(basename "${directory}")" =~ ^[-_a-zA-Z0-9]*\.test$ ]]
+            then
+                local name
+                name="$(basename "${directory}")"
+                name="${name%.test}"
+                TERRAFORM_TEST["${name}"]="${directory}"
+            else
+                _ die "Invalid argument '${arg}'"
+            fi
+        done
+    else
+        while read -d '' -r directory
+        do
+            if [ -d "${directory}" ] &&
+               [[ "$(basename "${directory}")" =~ ^[-_a-zA-Z0-9]*\.test$ ]]
+            then
+                local name
+                name="$(basename "${directory}")"
+                name="${name%.test}"
+                TERRAFORM_TEST["${name}"]="${directory}"
+            fi
+        done < <(find "${MANAGE_REPOSITORY}/terraform" -maxdepth 2 -type d -print0 2> /dev/null)
+    fi
+
+    for name in "${!TERRAFORM_TEST[@]}"
+    do
+        spec "${name}" "${TERRAFORM_TEST[$name]}"
+    done
+}
+
+onExit ()
+{
+    local exitCode=0
+
+    for name in "${!TERRAFORM_TEST[@]}"
+    do
+        _ info "Destroying '${name}' managed infrastructure"
+
+        local directory="${TERRAFORM_TEST[$name]}"
+
+        (
+            cd "${directory}" || return 1
+
+            "${MANAGE_REPOSITORY}/vendor/terraform/terraform" destroy -force || return 1
+        ) || exitCode+=1
+    done
+
+    for name in "${!TERRAFORM_TEST_CODE[@]}"
+    do
+        local code="${TERRAFORM_TEST_CODE[$name]}"
+
+        if (( code == 0 ))
+        then
+            _ info "Ok '${name}'"
+        else
+            _ error "Error '${name}'"
+            exitCode+=1
+        fi
+    done
+
+    exit "${exitCode}"
+}
