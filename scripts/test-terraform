@@ -106,6 +106,7 @@ onExit ()
             cd "${directory}" || return 1
 
             "${MANAGE_REPOSITORY}/vendor/terraform/terraform" destroy -force || return 1
+            rm -f "${directory}/terraform.tfstate" "${directory}/terraform.tfstate.backup" || true
         ) || exitCode+=1
     done
 
