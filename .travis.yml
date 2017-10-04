@@ -10,13 +10,16 @@ services:
 env:
   global:
   - PATH="/usr/bin:$PATH"
+  - AWS_DEFAULT_REGION="us-west-2"
   - TF_VAR_BUILD_NUMBER=${TRAVIS_JOB_NUMBER/./-}
+  - secure: QmlvDcCM/OL6NOlncJJJQu1vDk/Qp9wBADkki4/qRJ8llz8wJjwOowyo/Y20qSD5kykcOHuPRFLcvV0Euy7AvI0vpvN4E62YKNAYLZmwcPZVeDESh2Wlsy52PyTxRV3vnBj0Rh5Zs/yBy/ulLP3t9SgF4cs4H3WwAWKht+t9ZpPFdnA/HmVH6a9J+QM43cdd2d9Nhn1+kxRpuvFoAT+nPvt0n51pkiD53bw8NVs7R3OGNPPeUj7/yjIAdYqK1K1l+s5oEYbvwGPfbqYHJFX9WjjfLS4jOoSGMA5iCYca+HBxPh0H2c39eFnqc8ufobTaIqbQstIoqYg6aZqPglXMA5eaiwjBupHligbwlDAoLKCtpqYQzElqRFwmBFbuj/IXcFFcPqUvSwhkR5fg5ZYZt5VbPwVYXAv9A6ThGO3UsOyCJB/TmlapQzWmW4Pclm7vUAVP87iBPzmxz9C9wLbtzTyDlAk/7HAGoJ8cx1vWRn/2lrlXTuvViHYK8iMsOs89yQ/IaDjcs7hCVL+sN9DHdS3SjtXotk8wNa+QJYLVWmOzqhtnZgrYeBJ6dDNymhjhqTQy4h3Ov0+Y2rXYu4xRHzomigtRXDEdFP3E5ddecQaeKfrkMCpXxxkXR4X94QD2fBU4dM6wJ256gUXR9TDohGONAjfQEuHPTSKfNYZSm7g=
+  - secure: JfY0a44j0YVCrOM8zDeThLunrmv7X3XnWYLnuXo9CzKAwMx6DOad7Px1pyTqgfs7uQCIC0PFUipz4eJjMnzOzN52iJ3cRTQTi8iflBr9IKDuUgu7JsHtY0XrnX8d9ibACTm7Em5sCD6s0C+gWt7x1EwmHsR6Dq9ph8UHZsMF7ZVPvhAJt2xj0Tq0h+TOAGvVzbSvF4ea8E1q/VK9F5l1+hA4hdeHqXYhqpGG2N2PdyXQsuScbTJqs8afRRZLz66Kp+IuZ2SGnL7hTZdnoe7+WINv91RAbuyGfvPathXxSV3Mz+aqBa5M79nEunSMsBnxYsJnlmmFjROwV8L/QeFkkU4R+UeU2lS1GfG0S1M77E0G5g1HEC8R25qgQW70gHT4P8LGjgUWXruvL5wvtffjfjg4nu54SjW3OEK0L+pOVFSUm5AMvPYVa5++fn0wdG584KM2g+zc9YHPJoF/jA4tQZjhGeuO3X1fIEQdPLS/rgWxsFcs/LPiLIMjhTpSOmolFvqhidNiwleXX0y7qW2wiQxj/Ehns5zPIysOkevbiI5SB66fD29ZjR7/2Woi0DiOZAnyhSoyD4/PUuHYUkzUjd3GfPcdp9A5qpXk4ZIds85vPJg1rEUD+crnePTOdS+uSKOhfocF0fB3T3WDR7pfYoivhRi6AmD54+SLZ7QzKQ0=
 before_install:
 - sudo apt-get update -qq
 - sudo apt-get install -y -o Dpkg::Options::="--force-confnew" docker-ce
 - gpg --keyserver pgp.mit.edu --recv-key 0x671C330913823C5B
-- ./manage downloadTerraform
+- "./manage downloadTerraform"
 matrix:
   include:
-    - script: ./manage test-terraform aws/fastmail
-    - script: ./manage test-terraform aws/vpc
+  - script: "./manage test-terraform aws/fastmail"
+  - script: "./manage test-terraform aws/vpc"
