@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+# @import terraform/downloadTerraform
+# @description download and verify terraform binary
+
+main ()
+{
+    _ downloadTerraform
+}

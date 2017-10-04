@@ -2,7 +2,7 @@
 #
 # vim: set ft=sh:
 #
-# @description Hello World
+# @description Run terraform configuration test(s)
 # @import lang/required
 # @import console/info
 # @import console/die
@@ -10,7 +10,6 @@
 # @import console/error
 # @import console/die
 # @import string/upper
-# @import terraform/downloadTerraform
 
 declare -A TERRAFORM_TEST
 declare -A TERRAFORM_TEST_CODE
@@ -45,7 +44,7 @@ main ()
     verbose true
     strict true
 
-    [ -f "${MANAGE_REPOSITORY}/vendor/terraform/terraform" ] || _ die "Download terraform first: ./manage downloadTerraform"
+    [ -f "${MANAGE_REPOSITORY}/vendor/terraform/terraform" ] || _ die "Download terraform first: ./manage download-terraform"
 
     local queue=($@)
 
