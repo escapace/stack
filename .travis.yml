@@ -4,7 +4,6 @@ addons:
   apt:
     packages:
     - bc
-    - jq
 services:
 - docker
 env:
@@ -17,7 +16,7 @@ env:
 before_install:
 - pip install awscli --upgrade --user
 - sudo apt-get update -qq
-- sudo apt-get install -y -o Dpkg::Options::="--force-confnew" docker-ce
+- sudo apt-get install -y -o Dpkg::Options::="--force-confnew" docker-ce jq
 - gpg --keyserver pgp.mit.edu --recv-key 0x671C330913823C5B
 - "./manage download-terraform"
 - "./manage download-packer"
