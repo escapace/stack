@@ -53,7 +53,7 @@ main ()
         queue=(${TEST_SUITE})
     fi
 
-    if _ required "${queue[@]}"
+    if [[ ${#queue[@]} != 0 ]]
     then
         local arg
 
@@ -107,7 +107,7 @@ onExit ()
 
             "${MANAGE_REPOSITORY}/vendor/terraform/terraform" destroy -force || return 1
             rm -f "${directory}/terraform.tfstate" "${directory}/terraform.tfstate.backup" || true
-        ) || exitCode+=1
+        ) || ((exitCode++))
     done
 
     for name in "${!TERRAFORM_TEST_CODE[@]}"
@@ -119,7 +119,7 @@ onExit ()
             _ info "Ok '${name}'"
         else
             _ error "Error '${name}'"
-            exitCode+=1
+            ((exitCode++))
         fi
     done
 

@@ -1,0 +1,57 @@
+{
+  "min_packer_version": "1.1.0",
+  "variables": {
+    "aws_access_key_id": "{{env `AWS_ACCESS_KEY_ID`}}",
+    "aws_secret_access_key": "{{env `AWS_SECRET_ACCESS_KEY`}}",
+    "aws_default_region": "{{env `AWS_DEFAULT_REGION`}}"
+  },
+  "builders": [
+    {
+      "type": "amazon-ebs",
+      "access_key": "{{user `aws_access_key_id`}}",
+      "secret_key": "{{user `aws_secret_access_key`}}",
+      "region": "{{user `aws_default_region`}}",
+      "source_ami_filter": {
+        "filters": {
+          "virtualization-type": "hvm",
+          "root-device-type": "ebs",
+          "architecture": "x86_64",
+          "product-code": "aw0evgkw8e5c1q413zgy5pjce"
+        },
+        "owners": ["679593333241"],
+        "most_recent": true
+      },
+      "instance_type": "t2.micro",
+      "ssh_username": "centos",
+      "ami_name": "packer-quick-start {{timestamp}}",
+      "launch_block_device_mappings": [
+        {
+          "device_name": "/dev/sda1",
+          "volume_size": 40,
+          "volume_type": "gp2",
+          "delete_on_termination": true
+        }
+      ],
+      "ami_block_device_mappings": [
+        {
+          "device_name": "/dev/sdb",
+          "virtual_name": "ephemeral0"
+        },
+        {
+          "device_name": "/dev/sdc",
+          "virtual_name": "ephemeral1"
+        }
+      ],
+      "ami_description": "epiloque-amzn-ami-hvm",
+      "ena_support": true,
+      "ami_virtualization_type": "hvm"
+    }
+  ],
+  "post-processors": [
+    {
+      "type": "manifest",
+      "output": "manifest.json",
+      "strip_path": true
+    }
+  ]
+}

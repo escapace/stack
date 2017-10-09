@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+# @import packer/downloadPacker
+# @description download and verify packer binary
+
+main ()
+{
+    _ downloadPacker
+}

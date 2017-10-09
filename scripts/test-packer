@@ -1,0 +1,202 @@
+#!/usr/bin/env bash
+#
+# vim: set ft=sh:
+#
+# @description Run packer configuration test(s)
+# @import lang/required
+# @import console/info
+# @import console/die
+# @import console/warn
+# @import console/error
+# @import console/die
+# @import string/upper
+# @import string/splitString
+# @import lang/exists
+# @dependency jq
+
+declare -A PACKER_TEST
+declare -A PACKER_TEST_MANIFEST
+declare -A PACKER_TEST_CODE
+declare -A PACKER_TEST_ARTIFACTS
+
+spec ()
+{
+    local name="$1"
+    local template="$2"
+    local manifest="$3"
+    local code=0
+
+    local directory
+
+    directory="$(dirname "${template}")"
+
+    _ info "Running '${name}' test..."
+
+    (
+        cd "${directory}" || return 1
+
+        rm -f "${manifest}" &> /dev/null || true
+
+        if [[ ! -d "$(dirname "${manifest}")" ]]
+        then
+            mkdir -p "$(dirname "${manifest}")"
+        fi
+
+        "${MANAGE_REPOSITORY}/vendor/packer/packer" build \
+            -force \
+            "${template}" || return 1
+
+        [[ -f "${manifest}" ]] || return 1
+    ) || code=$?
+
+    PACKER_TEST_CODE["${name}"]="${code}"
+
+    if [[ -f "${manifest}" ]]
+    then
+        PACKER_TEST_ARTIFACTS["${name}"]="$(jq -r '.builds | .[] | select(.builder_type == "amazon-ebs") | .artifact_id // empty' < "${manifest}")"
+    fi
+}
+
+main ()
+{
+    verbose true
+    strict true
+
+    _ exists aws || _ die "Cannot find the AWS Command Line Interface (AWS CLI)"
+
+    [ -f "${MANAGE_REPOSITORY}/vendor/packer/packer" ] || _ die "Download packer first: ./manage download-packer"
+
+    local queue=($@)
+
+    if _ required "${TEST_SUITE}"
+    then
+        queue=(${TEST_SUITE})
+    fi
+
+    if [[ ${#queue[@]} != 0 ]]
+    then
+        local arg
+
+        for arg in "${queue[@]}"
+        do
+            local file="${MANAGE_REPOSITORY}/packer/${arg}.json"
+
+            if [ -f "${file}" ] &&
+               [[ "$(basename "${file}")" =~ ^[-_a-zA-Z0-9]*\.json$ ]] &&
+               [[ ! "$(basename "${file}")" =~ ^[-_a-zA-Z0-9]*manifest\.json$ ]] &&
+               [[ "$(basename "${file}")" != "manifest.json" ]]
+            then
+                local name
+                name="$(basename "${file}")"
+                name="${name%.json}"
+                name="$(basename "$(dirname "${file}")")/${name}"
+                PACKER_TEST["${name}"]="${file}"
+                PACKER_TEST_MANIFEST["${name}"]="$(dirname "${file}")/$(jq -r '."post-processors" | .[] | select(.type == "manifest") | .output // empty' < "${file}")"
+            else
+                _ die "Invalid argument '${arg}'"
+            fi
+        done
+    else
+        while read -d '' -r file
+        do
+            if [ -f "${file}" ] &&
+               [[ "$(basename "${file}")" =~ ^[-_a-zA-Z0-9]*\.json$ ]] &&
+               [[ ! "$(basename "${file}")" =~ ^[-_a-zA-Z0-9]*manifest\.json$ ]]
+            then
+                local name
+                name="$(basename "${file}")"
+                name="${name%.json}"
+                name="$(basename "$(dirname "${file}")")/${name}"
+                PACKER_TEST["${name}"]="${file}"
+                PACKER_TEST_MANIFEST["${name}"]="$(dirname "${file}")/$(jq -r '."post-processors" | .[] | select(.type == "manifest") | .output // empty' < "${file}")"
+            fi
+        done < <(find "${MANAGE_REPOSITORY}/packer" -not -name "manifest.json" -name "*.json" -maxdepth 3 -type f -print0 2> /dev/null)
+    fi
+
+    for name in "${!PACKER_TEST[@]}"
+    do
+        spec "${name}" "${PACKER_TEST[$name]}" "${PACKER_TEST_MANIFEST[$name]}"
+    done
+}
+
+onExit ()
+{
+    local exitCode=0
+    local name
+
+    for name in "${!PACKER_TEST_ARTIFACTS[@]}"
+    do
+        _ info "Destroying '${name}' managed infrastructure"
+
+        local artifacts=(${PACKER_TEST_ARTIFACTS[$name]})
+        local artifact
+
+        for artifact in "${artifacts[@]}"
+        do
+            artifact=($(echo "${artifact}" | _ splitString ':'))
+
+            local region="${artifact[0]}"
+            local ami="${artifact[1]}"
+
+            {
+                local snapshots=()
+                local volumes=()
+                local localCode=0
+
+                snapshots=($(
+                    AWS_DEFAULT_OUTPUT="json" aws --region "${region}" ec2 describe-images --image-ids "${ami}" \
+                        | jq -r '.Images | .[] | .BlockDeviceMappings | .[] | .Ebs.SnapshotId // empty'
+                )) || ((localCode++))
+
+                if [[ ${#snapshots[@]} != 0 ]]
+                then
+                    volumes=($(
+                        AWS_DEFAULT_OUTPUT="json" aws --region "${region}" ec2 describe-snapshots --snapshot-ids \
+                        "$(_ join "snapshots" ' ')" | jq -r '.Snapshots | .[] | .VolumeId // empty'
+                    )) || ((localCode++))
+                fi
+
+                AWS_DEFAULT_OUTPUT="text" aws --region "${region}" ec2 deregister-image --image-id "${ami}" || ((localCode++))
+
+                for snapshot in "${snapshots[@]}"
+                do
+                    AWS_DEFAULT_OUTPUT="text" aws --region "${region}" ec2 delete-snapshot --snapshot-id "${snapshot}" || ((localCode++))
+                done
+
+                # NOTE: Packer users pre-built AMIs as the source for building
+                # images.  These source AMIs may include volumes that are not
+                # flagged to be destroyed on termiation of the instance building
+                # the new image. Packer will attempt to clean up all residual
+                # volumes that are not designated by the user to remain after
+                # termination. If you need to preserve those source volumes, you
+                # can overwrite the termination setting by specifying
+                # `delete_on_termination=false` in the `launch_device_mappings`
+                # block for the device.
+
+                for volume in "${volumes[@]}"
+                do
+                    AWS_DEFAULT_OUTPUT="text" aws --region "${region}" ec2 delete-volume --volume-id "${volume}" &> /dev/null || true
+                done
+
+                return "${localCode}"
+            } || ((exitCode++))
+        done
+
+        rm -f "${PACKER_TEST_MANIFEST[$name]}" &> /dev/null || true
+    done
+
+    for name in "${!PACKER_TEST_CODE[@]}"
+    do
+        local code="${PACKER_TEST_CODE[$name]}"
+
+        if (( code == 0 ))
+        then
+            _ info "Ok '${name}'"
+        else
+            _ error "Error '${name}'"
+            ((exitCode++))
+        fi
+    done
+
+    exit "${exitCode}"
+}

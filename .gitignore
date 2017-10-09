@@ -1,6 +1,11 @@
+drafts
 .secrets
+packer/*/manifest.json
+packer/*/*-manifest.json
 vendor/terraform/*
 !vendor/terraform/.gitkeep
+vendor/packer/*
+!vendor/packer/.gitkeep
 .manage_modules
 *.dll
 *.exe

@@ -7,6 +7,9 @@ env:
   TERRAFORM_BINARY: "https://releases.hashicorp.com/terraform/0.10.6/terraform_0.10.6_linux_amd64.zip"
   TERRAFORM_SHA256SUMS: "https://releases.hashicorp.com/terraform/0.10.6/terraform_0.10.6_SHA256SUMS"
   TERRAFORM_SHA256SUMS_SIGNATURE: "https://releases.hashicorp.com/terraform/0.10.6/terraform_0.10.6_SHA256SUMS.sig"
+  PACKER_BINARY: "https://releases.hashicorp.com/packer/1.1.0/packer_1.1.0_linux_amd64.zip"
+  PACKER_SHA256SUMS: "https://releases.hashicorp.com/packer/1.1.0/packer_1.1.0_SHA256SUMS"
+  PACKER_SHA256SUMS_SIGNATURE: "https://releases.hashicorp.com/packer/1.1.0/packer_1.1.0_SHA256SUMS.sig"
   DOCKER_SCOPE: "testing"
 
 # Enable manage repository scripts
