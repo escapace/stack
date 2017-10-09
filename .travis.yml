@@ -16,8 +16,10 @@ env:
 before_install:
 - pip install awscli --upgrade --user
 - sudo apt-get update -qq
-- sudo apt-get install -y -o Dpkg::Options::="--force-confnew" docker-ce jq
+- sudo apt-get install -y -o Dpkg::Options::="--force-confnew" docker-ce
 - gpg --keyserver pgp.mit.edu --recv-key 0x671C330913823C5B
+- mkdir -p ~/bin && curl -sSL -o ~/bin/jq https://github.com/stedolan/jq/releases/download/jq-1.5/jq-linux64 && chmod +x ~/bin/jq
+- export PATH=$PATH:~/bin
 - "./manage download-terraform"
 - "./manage download-packer"
 matrix:
