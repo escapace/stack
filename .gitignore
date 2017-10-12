@@ -1,7 +1,11 @@
+ansible/roles/*
+!ansible/roles/.gitkeep
 drafts
 .secrets
 packer/*/manifest.json
 packer/*/*-manifest.json
+vendor/restic/*
+!vendor/restic/.gitkeep
 vendor/terraform/*
 !vendor/terraform/.gitkeep
 vendor/packer/*
