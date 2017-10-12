@@ -24,6 +24,8 @@ spec ()
 
     (
         cd "${directory}" || return 1
+        rm -f "${directory}/terraform.tfstate" "${directory}/terraform.tfstate.backup" || true
+        rm -rf "${directory}/.terraform" || true
 
         "${MANAGE_REPOSITORY}/vendor/terraform/terraform" init \
             -force-copy \
@@ -103,10 +105,18 @@ onExit ()
         local directory="${TERRAFORM_TEST[$name]}"
 
         (
-            cd "${directory}" || return 1
+            local localCode=0
+            cd "${directory}" || ((localCode++))
 
-            "${MANAGE_REPOSITORY}/vendor/terraform/terraform" destroy -force || return 1
-            rm -f "${directory}/terraform.tfstate" "${directory}/terraform.tfstate.backup" || true
+            "${MANAGE_REPOSITORY}/vendor/terraform/terraform" destroy -force || ((localCode++))
+
+            if (( localCode == 0 ))
+            then
+                rm -f "${directory}/terraform.tfstate" "${directory}/terraform.tfstate.backup" || true
+                rm -rf "${directory}/.terraform" || true
+            fi
+
+            return "${localCode}"
         ) || ((exitCode++))
     done
 

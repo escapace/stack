@@ -40,6 +40,10 @@ resource "aws_vpc" "main" {
     Name        = "${var.name}"
     Environment = "${var.environment}"
   }
+
+  lifecycle {
+    create_before_destroy = true
+  }
 }
 
 /**
@@ -48,6 +52,10 @@ resource "aws_vpc" "main" {
 
 resource "aws_internet_gateway" "main" {
   vpc_id = "${aws_vpc.main.id}"
+
+  lifecycle {
+    create_before_destroy = true
+  }
 
   tags {
     Name        = "${var.name}"
@@ -60,11 +68,19 @@ resource "aws_nat_gateway" "main" {
   allocation_id = "${element(aws_eip.nat.*.id, count.index)}"
   subnet_id     = "${element(aws_subnet.external.*.id, count.index)}"
   depends_on    = ["aws_internet_gateway.main"]
+
+  lifecycle {
+    create_before_destroy = true
+  }
 }
 
 resource "aws_eip" "nat" {
   count = "${length(var.internal_subnets)}"
   vpc   = true
+
+  lifecycle {
+    create_before_destroy = true
+  }
 }
 
 /**
@@ -81,8 +97,13 @@ resource "aws_subnet" "external" {
   ipv6_cidr_block                 = "${cidrsubnet(aws_vpc.main.ipv6_cidr_block, 8, count.index+length(var.external_subnets))}"
 
   tags {
-    Name = "${var.name}-${format("external-%03d", count.index+1)}"
+    Name = "${var.name}"
     Environment = "${var.environment}"
+    Placement = "${format("external-%03d", count.index+1)}"
+  }
+
+  lifecycle {
+    create_before_destroy = true
   }
 }
 
@@ -95,8 +116,13 @@ resource "aws_subnet" "internal" {
   ipv6_cidr_block                 = "${cidrsubnet(aws_vpc.main.ipv6_cidr_block, 8, count.index)}"
 
   tags {
-    Name = "${var.name}-${format("internal-%03d", count.index+1)}"
+    Name = "${var.name}"
     Environment = "${var.environment}"
+    Placement = "${format("internal-%03d", count.index+1)}"
+  }
+
+  lifecycle {
+    create_before_destroy = true
   }
 }
 
@@ -118,8 +144,12 @@ resource "aws_route_table" "external" {
   }
 
   tags {
-    Name = "${var.name}-external-001"
+    Name = "${var.name}"
     Environment = "${var.environment}"
+  }
+
+  lifecycle {
+    create_before_destroy = true
   }
 }
 
@@ -140,8 +170,13 @@ resource "aws_route_table" "internal" {
   }
 
   tags {
-    Name = "${var.name}-${format("internal-%03d", count.index+1)}"
+    Name = "${var.name}"
     Environment = "${var.environment}"
+    Placement = "${format("internal-%03d", count.index+1)}"
+  }
+
+  lifecycle {
+    create_before_destroy = true
   }
 }
 
@@ -153,12 +188,20 @@ resource "aws_route_table_association" "internal" {
   count          = "${length(var.internal_subnets)}"
   subnet_id      = "${element(aws_subnet.internal.*.id, count.index)}"
   route_table_id = "${element(aws_route_table.internal.*.id, count.index)}"
+
+  lifecycle {
+    create_before_destroy = true
+  }
 }
 
 resource "aws_route_table_association" "external" {
   count          = "${length(var.external_subnets)}"
   subnet_id      = "${element(aws_subnet.external.*.id, count.index)}"
   route_table_id = "${aws_route_table.external.id}"
+
+  lifecycle {
+    create_before_destroy = true
+  }
 }
 
 /**

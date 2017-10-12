@@ -1,21 +1,11 @@
 provider "aws" {}
 
-variable "name" {
-  default     = "stack"
-  description = "the name of your stack"
-}
-
-variable "environment" {
-  default     = "test"
-  description = "the name of your environment"
-}
-
 variable "region" {
   description = <<EOF
   the AWS region in which resources are created, you must
   set the availability_zones variable as well if you define this value to
   something other than the default"
-  EOF
+EOF
 
   default = "us-west-2"
 }
@@ -25,7 +15,7 @@ variable "cidr_block" {
   the CIDR block to provision for the VPC, if set to something
   other than the default, both internal_subnets and external_subnets have to be
   defined as well
-  EOF
+EOF
 
   default = "10.30.0.0/16"
 }
@@ -35,7 +25,7 @@ variable "internal_subnets" {
   a list of CIDRs for internal subnets in your VPC, must be set
   if the cidr variable is defined, needs to have as many elements as there are
   availability zones
-  EOF
+EOF
 
   default = ["10.30.0.0/19", "10.30.32.0/19", "10.30.64.0/19"]
 }
@@ -45,7 +35,7 @@ variable "external_subnets" {
   a list of CIDRs for external subnets in your VPC, must be set
   if the cidr variable is defined, needs to have as many elements as there are
   availability zones
-  EOF
+EOF
 
   default = ["10.30.96.0/19", "10.30.128.0/19", "10.30.160.0/19"]
 }
@@ -55,17 +45,28 @@ variable "availability_zones" {
   a comma-separated list of availability zones, defaults to all
   AZ of the region, if set to something other than the defaults, both
   internal_subnets and external_subnets have to be defined as well
-  EOF
+EOF
 
   default = ["us-west-2a", "us-west-2b", "us-west-2c"]
 }
 
+resource "random_string" "id" {
+  length = 8
+  lower = true
+  special = false
+  upper = false
+
+  lifecycle {
+    create_before_destroy = true
+  }
+}
+
 module "vpc" {
   source             = "../vpc"
-  name               = "${var.name}"
+  name               = "${random_string.id.result}"
+  environment        = "${random_string.id.result}"
   cidr_block         = "${var.cidr_block}"
   internal_subnets   = "${var.internal_subnets}"
   external_subnets   = "${var.external_subnets}"
   availability_zones = "${var.availability_zones}"
-  environment        = "${var.environment}"
 }
