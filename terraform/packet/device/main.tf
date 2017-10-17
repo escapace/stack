@@ -36,16 +36,16 @@ resource "random_pet" "name" {
   count = "${length(var.facilities)}"
 }
 
-resource "packet_reserved_ip_block" "eip" {
-  count      = "${length(var.facilities)}"
-  project_id = "${var.project_id}"
-  facility   = "${element(var.facilities, count.index)}"
-  quantity   = 2
-
-  lifecycle {
-    create_before_destroy = true
-  }
-}
+/* resource "packet_reserved_ip_block" "eip" { */
+/*   count      = "${length(var.facilities)}" */
+/*   project_id = "${var.project_id}" */
+/*   facility   = "${element(var.facilities, count.index)}" */
+/*   quantity   = 2 */
+/*  */
+/*   lifecycle { */
+/*     create_before_destroy = true */
+/*   } */
+/* } */
 
 resource "packet_device" "device" {
   count            = "${length(var.facilities)}"
@@ -61,15 +61,15 @@ resource "packet_device" "device" {
   }
 }
 
-resource "packet_ip_attachment" "attachment" {
-  count         = "${length(var.facilities)}"
-  device_id     = "${element(packet_device.device.*.id, count.index)}"
-  cidr_notation = "${cidrhost(element(packet_reserved_ip_block.eip.*.cidr_notation, count.index), 0)}/32}"
-
-  lifecycle {
-    create_before_destroy = true
-  }
-}
+/* resource "packet_ip_attachment" "attachment" { */
+/*   count         = "${length(var.facilities)}" */
+/*   device_id     = "${element(packet_device.device.*.id, count.index)}" */
+/*   cidr_notation = "${cidrhost(element(packet_reserved_ip_block.eip.*.cidr_notation, count.index), 0)}/32}" */
+/*  */
+/*   lifecycle { */
+/*     create_before_destroy = true */
+/*   } */
+/* } */
 
 resource "packet_volume" "volume" {
   billing_cycle = "hourly"
