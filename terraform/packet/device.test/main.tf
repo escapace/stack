@@ -3,7 +3,7 @@ provider "packet" {}
 variable "PACKET_PROJECT_ID" {}
 
 variable "facilities" {
-  default = ["ams1", "sjc1"]
+  default = ["ams1", "ams1"]
 }
 
 variable "plans" {

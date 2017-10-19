@@ -15,6 +15,7 @@ vendor/packer/*
 *.exe
 .DS_Store
 example.tf
+.terraform.tfstate.lock.info
 terraform.tfplan
 terraform.tfstate
 .vagrant/
