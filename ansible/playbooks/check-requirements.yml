@@ -1,0 +1,4 @@
+---
+- import_playbook: check-ssh-user.yml
+- import_playbook: check-ansible-version.yml
+- import_playbook: check-kernel-version.yml

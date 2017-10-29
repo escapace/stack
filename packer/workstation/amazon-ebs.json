@@ -42,7 +42,7 @@
           "virtual_name": "ephemeral1"
         }
       ],
-      "ami_description": "epiloque-amzn-ami-hvm",
+      "ami_description": "escapace-amzn-ami-hvm",
       "ena_support": true,
       "ami_virtualization_type": "hvm"
     }

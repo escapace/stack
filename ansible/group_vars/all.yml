@@ -1,0 +1,7 @@
+---
+
+normalize_username: stack
+docker_selinux_enabled: true
+duo_unix_groups: kbd-interactive
+ssh_keyboard_interactive_group: kbd-interactive
+epiloque_keyboard_interactive_group: kbd-interactive

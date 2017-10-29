@@ -1,0 +1,39 @@
+- src: escapace.docker
+  name: escapace.docker
+
+- src: escapace.epel
+  name: escapace.epel
+
+- src: escapace.packagecloud
+  name: escapace.packagecloud
+
+- src: escapace.sudo
+  name: escapace.sudo
+
+- src: escapace.ferm
+  name: escapace.ferm
+
+- src: escapace.ssh
+  name: escapace.ssh
+
+- src: escapace.unattended-upgrades
+  name: escapace.unattended-upgrades
+
+- src: escapace.duo_unix
+  name: escapace.duo_unix
+
+- src: escapace.logrotate
+  name: escapace.logrotate
+
+- src: escapace.lvm
+  name: escapace.lvm
+
+- src: escapace.ntp
+  name: escapace.ntp
+
+- src: escapace.tunnelbroker
+  name: escapace.tunnelbroker
+
+- src: escapace.virtualbox
+  name: escapace.virtualbox
+

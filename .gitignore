@@ -1,3 +1,5 @@
+ansible/inventory
+ansible/test.yml
 ansible/roles/*
 !ansible/roles/.gitkeep
 drafts

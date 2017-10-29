@@ -1,3 +1,7 @@
+/* Source code for this software was modified from */
+/* https://github.com/segmentio/stack. See SEGMENTIO-STACK-LICENSE license for */
+/* details. */
+
 variable "cidr_block" {
   description = "The CIDR block for the VPC."
 }
