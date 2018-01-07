@@ -15,20 +15,48 @@
 # @dependency jq
 
 declare -A PACKER_TEST
+declare -A PACKER_TYPE
 declare -A PACKER_TEST_MANIFEST
 declare -A PACKER_TEST_CODE
-declare -A PACKER_TEST_ARTIFACTS
+declare -A PACKER_TEST_EBS_ARTIFACTS
 
-spec ()
-{
-    local name="$1"
-    local template="$2"
-    local manifest="$3"
+specVirtualbox () {
+    _ exists vagrant || _ die "Cannot find vagrant"
+
     local code=0
-
     local directory
+    local name="$1"
+    local template="${PACKER_TEST[${name}]}"
+    local type="${PACKER_TYPE[${name}]}"
 
     directory="$(dirname "${template}")"
+
+    _ info "Running '${name}' test..."
+
+    (
+        cd "${directory}" || return 1
+
+        "${MANAGE_REPOSITORY}/vendor/packer/packer" build \
+            -only="${type}" \
+            -force \
+            "${template}" || return 1
+    ) || code=$?
+
+    PACKER_TEST_CODE["${name}"]="${code}"
+}
+
+specEBS ()
+{
+    local code=0
+    local directory
+    local manifest
+    local name="$1"
+    local template="${PACKER_TEST[${name}]}"
+
+    _ exists aws || _ die "Cannot find the AWS Command Line Interface (AWS CLI)"
+
+    directory="$(dirname "${template}")"
+    manifest="${directory}/$(jq -r '."post-processors" | .[] | select(.type == "manifest") | .output // empty' < "${template}")"
 
     _ info "Running '${name}' test..."
 
@@ -43,6 +71,7 @@ spec ()
         fi
 
         "${MANAGE_REPOSITORY}/vendor/packer/packer" build \
+            -only=amazon-ebs \
             -force \
             "${template}" || return 1
 
@@ -53,7 +82,33 @@ spec ()
 
     if [[ -f "${manifest}" ]]
     then
-        PACKER_TEST_ARTIFACTS["${name}"]="$(jq -r '.builds | .[] | select(.builder_type == "amazon-ebs") | .artifact_id // empty' < "${manifest}")"
+        PACKER_TEST_MANIFEST["${name}"]="${manifest}"
+        PACKER_TEST_EBS_ARTIFACTS["${name}"]="$(jq -r '.builds | .[] | select(.builder_type == "amazon-ebs") | .artifact_id // empty' < "${manifest}")"
+    fi
+}
+
+routeFile () {
+    local file="$1"
+
+    if [ -f "${file}" ] &&
+        [[ "$(basename "${file}")" =~ ^[-_a-zA-Z0-9]*\.json$ ]] &&
+        [[ ! "$(basename "${file}")" =~ ^[-_a-zA-Z0-9]*manifest\.json$ ]] &&
+        [[ "$(basename "${file}")" != "manifest.json" ]]
+    then
+        local name
+        local type
+        local types
+        name="$(basename "${file}")"
+        name="${name%.json}"
+        name="$(basename "$(dirname "${file}")")/${name}"
+        mapfile -t types <<< "$(jq -r '."builders" | .[] | .type // empty' < "${file}")"
+
+        for type in "${types[@]}"
+        do
+            name="${name}::${type}"
+            PACKER_TEST["${name}"]="${file}"
+            PACKER_TYPE["${name}"]="${type}"
+        done
     fi
 }
 
@@ -61,8 +116,6 @@ main ()
 {
     verbose true
     strict true
-
-    _ exists aws || _ die "Cannot find the AWS Command Line Interface (AWS CLI)"
 
     [ -f "${MANAGE_REPOSITORY}/vendor/packer/packer" ] || _ die "Download packer first: ./manage download-packer"
 
@@ -81,41 +134,27 @@ main ()
         do
             local file="${MANAGE_REPOSITORY}/packer/${arg}.json"
 
-            if [ -f "${file}" ] &&
-               [[ "$(basename "${file}")" =~ ^[-_a-zA-Z0-9]*\.json$ ]] &&
-               [[ ! "$(basename "${file}")" =~ ^[-_a-zA-Z0-9]*manifest\.json$ ]] &&
-               [[ "$(basename "${file}")" != "manifest.json" ]]
-            then
-                local name
-                name="$(basename "${file}")"
-                name="${name%.json}"
-                name="$(basename "$(dirname "${file}")")/${name}"
-                PACKER_TEST["${name}"]="${file}"
-                PACKER_TEST_MANIFEST["${name}"]="$(dirname "${file}")/$(jq -r '."post-processors" | .[] | select(.type == "manifest") | .output // empty' < "${file}")"
-            else
-                _ die "Invalid argument '${arg}'"
-            fi
+            routeFile "${file}"
         done
     else
         while read -d '' -r file
         do
-            if [ -f "${file}" ] &&
-               [[ "$(basename "${file}")" =~ ^[-_a-zA-Z0-9]*\.json$ ]] &&
-               [[ ! "$(basename "${file}")" =~ ^[-_a-zA-Z0-9]*manifest\.json$ ]]
-            then
-                local name
-                name="$(basename "${file}")"
-                name="${name%.json}"
-                name="$(basename "$(dirname "${file}")")/${name}"
-                PACKER_TEST["${name}"]="${file}"
-                PACKER_TEST_MANIFEST["${name}"]="$(dirname "${file}")/$(jq -r '."post-processors" | .[] | select(.type == "manifest") | .output // empty' < "${file}")"
-            fi
+            routeFile "${file}"
         done < <(find "${MANAGE_REPOSITORY}/packer" -not -name "manifest.json" -name "*.json" -maxdepth 3 -type f -print0 2> /dev/null)
     fi
 
     for name in "${!PACKER_TEST[@]}"
     do
-        spec "${name}" "${PACKER_TEST[$name]}" "${PACKER_TEST_MANIFEST[$name]}"
+        case "${PACKER_TYPE["${name}"]}" in
+            amazon-ebs)
+                specEBS "${name}"
+                ;;
+            # virtualbox-iso)
+            #     specVirtualbox "${name}"
+            #     ;;
+            *)
+                _ warn "Ignoring unsupported builder type '${PACKER_TYPE["${name}"]}'"
+        esac
     done
 }
 
@@ -124,11 +163,11 @@ onExit ()
     local exitCode=0
     local name
 
-    for name in "${!PACKER_TEST_ARTIFACTS[@]}"
+    for name in "${!PACKER_TEST_EBS_ARTIFACTS[@]}"
     do
         _ info "Destroying '${name}' managed infrastructure"
 
-        local artifacts=(${PACKER_TEST_ARTIFACTS[$name]})
+        local artifacts=(${PACKER_TEST_EBS_ARTIFACTS[$name]})
         local artifact
 
         for artifact in "${artifacts[@]}"
@@ -196,6 +235,13 @@ onExit ()
             _ error "Error '${name}'"
             ((exitCode++))
         fi
+    done
+
+    for name in "${!PACKER_TEST[@]}"
+    do
+        rm -rf "$(dirname "${PACKER_TEST[$name]}")/packer_cache"
+        rm -rf "$(dirname "${PACKER_TEST[$name]}")/builds"
+        rm -rf "$(dirname "${PACKER_TEST[$name]}")/output-virtualbox-iso"
     done
 
     exit "${exitCode}"

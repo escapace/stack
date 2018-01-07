@@ -1,0 +1,19 @@
+- name: reboot host
+  shell: nohup bash -c "sleep 2s && reboot" &
+  when: provider == "packet"
+  tags:
+    - reboot
+
+- name: wait for host boot
+  wait_for:
+    host: '{{ ansible_host | default(inventory_hostname) }}'
+    port: "{{ ansible_port | default(22) }}"
+    delay: "{{ normalize_reboot_delay | default(100) }}"
+    search_regex: OpenSSH
+    timeout: 900
+    state: started
+  vars:
+    ansible_connection: local
+  when: provider == "packet"
+  tags:
+    - reboot

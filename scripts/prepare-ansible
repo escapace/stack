@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+# @description install ansible and roles
+# @import lang/exists
+# @import console/die
+# @import console/info
+
+main ()
+{
+    _ exists ansible || {
+        _ exists pip || _ die 'command not found: pip'
+        pip install ansible==2.4.0.0
+    }
+
+    _ info "Downloading roles ..."
+    ansible-galaxy install --force -r "${MANAGE_REPOSITORY}/ansible/requirements.yml" -p "${MANAGE_REPOSITORY}/ansible/roles/" &> /dev/null
+}

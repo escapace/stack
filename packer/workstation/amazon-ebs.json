@@ -5,12 +5,41 @@
     "aws_secret_access_key": "{{env `AWS_SECRET_ACCESS_KEY`}}",
     "aws_default_region": "{{env `AWS_DEFAULT_REGION`}}"
   },
+  "provisioners": [
+    {
+      "type": "shell-local",
+      "command": "../../manage prepare-ansible"
+    },
+    {
+      "type": "ansible",
+      "user": "centos",
+      "playbook_file": "../../ansible/workstation.yml",
+      "ansible_env_vars": [
+        "ANSIBLE_BECOME=True",
+        "ANSIBLE_CALLBACK_WHITELIST=profile_roles",
+        "ANSIBLE_HOST_KEY_CHECKING=False",
+        "ANSIBLE_NOCOLOR=True",
+        "ANSIBLE_RETRY_FILES_ENABLED=False",
+        "ANSIBLE_SSH_ARGS='-o ForwardAgent=yes -o ControlMaster=auto -o ControlPersist=60s'"
+      ],
+      "extra_arguments": [
+        "--extra-vars", "lvm_physical_device=/dev/xvdb"
+      ],
+      "groups": ["provider=ec2"]
+    },
+    {
+      "type": "shell",
+      "script": "../scripts/seal-centos.sh",
+      "execute_command": "sudo chmod +x {{ .Path }}; sudo -S sh -c '{{ .Vars }} {{ .Path }}'"
+    }
+  ],
   "builders": [
     {
       "type": "amazon-ebs",
       "access_key": "{{user `aws_access_key_id`}}",
       "secret_key": "{{user `aws_secret_access_key`}}",
       "region": "{{user `aws_default_region`}}",
+      "instance_type": "t2.medium",
       "source_ami_filter": {
         "filters": {
           "virtualization-type": "hvm",
@@ -23,10 +52,16 @@
       },
       "instance_type": "t2.micro",
       "ssh_username": "centos",
-      "ami_name": "packer-quick-start {{timestamp}}",
+      "ami_name": "escapace-workstation {{timestamp}}",
       "launch_block_device_mappings": [
         {
           "device_name": "/dev/sda1",
+          "volume_size": 40,
+          "volume_type": "gp2",
+          "delete_on_termination": true
+        },
+        {
+          "device_name": "/dev/sdb",
           "volume_size": 40,
           "volume_type": "gp2",
           "delete_on_termination": true
@@ -35,14 +70,11 @@
       "ami_block_device_mappings": [
         {
           "device_name": "/dev/sdb",
-          "virtual_name": "ephemeral0"
-        },
-        {
-          "device_name": "/dev/sdc",
-          "virtual_name": "ephemeral1"
+          "volume_size": 40,
+          "volume_type": "gp2",
+          "delete_on_termination": true
         }
       ],
-      "ami_description": "escapace-amzn-ami-hvm",
       "ena_support": true,
       "ami_virtualization_type": "hvm"
     }

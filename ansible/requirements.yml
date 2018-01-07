@@ -1,3 +1,6 @@
+- src: escapace.dotfiles
+  name: escapace.dotfiles
+
 - src: escapace.docker
   name: escapace.docker
 

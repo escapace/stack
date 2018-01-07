@@ -1,0 +1,47 @@
+---
+
+- name: install selinux dependencies
+  yum:
+    name: "{{ item }}"
+    state: present
+  with_items:
+    - libselinux
+    - libselinux-utils
+    - policycoreutils
+    - policycoreutils-python
+    - selinux-policy-minimum
+    - selinux-policy-targeted
+
+- name: enforce selinux
+  selinux:
+    policy: targeted
+    state: enforcing
+  notify:
+  - normalize reboot needed
+  - normalize autorelabel
+
+- name: enforce selinux
+  copy:
+    src: files/selinux_config
+    dest: /etc/selinux/config
+    owner: root
+    group: root
+    mode: 0644
+    seuser: system_u
+    serole: object_r
+    setype: selinux_config_t
+    selevel: s0
+
+- name: symlink /etc/sysconfig/selinux
+  file:
+    force: yes
+    state: link
+    src: /etc/selinux/config
+    dest: /etc/sysconfig/selinux
+    owner: root
+    group: root
+    mode: 0644
+    seuser: system_u
+    serole: object_r
+    setype: selinux_config_t
+    selevel: s0

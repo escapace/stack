@@ -1,0 +1,10 @@
+---
+
+- name: increase yum timeouts
+  shell: "yum-config-manager --save --setopt {{ item.option }}={{ item.value }}"
+  changed_when: False
+  with_items:
+    - option: timeout
+      value: 60.0
+    - option: retries
+      value: 30

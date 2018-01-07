@@ -1,0 +1,10 @@
+- hosts: all
+  roles:
+  - normalize
+  - escapace.packagecloud
+  - escapace.sudo
+  - escapace.ntp
+  - escapace.unattended-upgrades
+  - escapace.ssh
+  - escapace.dotfiles
+  - escapace.docker

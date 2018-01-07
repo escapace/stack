@@ -1,0 +1,19 @@
+---
+
+- name: upgrade kernel package
+  yum:
+    name: kernel
+    state: latest
+  # when: provider != 'packet'
+  notify:
+  - normalize reboot needed
+  tags:
+    - upgrade
+
+- name: upgrade all packages
+  yum:
+    name: "*"
+    state: latest
+    exclude: kernel
+  tags:
+    - upgrade
