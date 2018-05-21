@@ -1,3 +1,7 @@
 ---
 
 provider: packet
+docker_storage_driver: devicemapper
+dotfiles_username: l5x
+normalize_username: l5x
+lvm_physical_device: /dev/dm-0
