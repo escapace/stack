@@ -193,7 +193,7 @@ onExit ()
                     then
                         volumes=($(
                             AWS_DEFAULT_OUTPUT="json" aws --region "${region}" ec2 describe-snapshots --snapshot-ids \
-                            "$(_ join "snapshots" ' ')" | jq -r '.Snapshots | .[] | .VolumeId // empty'
+                            "${snapshots[@]}" | jq -r '.Snapshots | .[] | .VolumeId // empty'
                         )) || ((localCode++))
                     fi
 

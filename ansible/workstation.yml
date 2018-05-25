@@ -2,9 +2,9 @@
   roles:
   - escapace.sudo
   - normalize
-  - escapace.dotfiles
   - escapace.packagecloud
   - escapace.ntp
   - escapace.unattended-upgrades
   - escapace.ssh
   - escapace.docker
+  - escapace.dotfiles

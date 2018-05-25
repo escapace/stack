@@ -121,7 +121,6 @@ datasource:
 END
 
 systemctl stop docker || true
-rm -rf /var/lib/docker || true
 
 yum clean all
 rm -rf /var/cache/yum
