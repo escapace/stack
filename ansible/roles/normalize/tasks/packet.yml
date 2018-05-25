@@ -1,5 +1,11 @@
 ---
 
+- name: remove packet mirror
+  file:
+    path: /etc/yum.repos.d/packet.repo
+    state: absent
+  when: provider == 'packet'
+
 # - name: fetch ssh keys from packet metadata
 #   shell: curl -sSL https://metadata.packet.net/metadata | jq -r '.ssh_keys | .[] // empty'
 #   args:

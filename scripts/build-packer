@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+#
+# vim: set ft=sh:
+#
+# @description Build packer configuration(s)
+# @import manage/manage
+
+main () {
+    STACK_NO_CLEAN=true _ manage test-packer "${@}"
+}

@@ -149,9 +149,9 @@ main ()
             amazon-ebs)
                 specEBS "${name}"
                 ;;
-            # virtualbox-iso)
-            #     specVirtualbox "${name}"
-            #     ;;
+            virtualbox-iso)
+                specVirtualbox "${name}"
+                ;;
             *)
                 _ warn "Ignoring unsupported builder type '${PACKER_TYPE["${name}"]}'"
         esac
@@ -163,86 +163,90 @@ onExit ()
     local exitCode=0
     local name
 
-    for name in "${!PACKER_TEST_EBS_ARTIFACTS[@]}"
-    do
-        _ info "Destroying '${name}' managed infrastructure"
-
-        local artifacts=(${PACKER_TEST_EBS_ARTIFACTS[$name]})
-        local artifact
-
-        for artifact in "${artifacts[@]}"
+    if [[ -z "${STACK_NO_CLEAN}" ]]
+    then
+        for name in "${!PACKER_TEST_EBS_ARTIFACTS[@]}"
         do
-            artifact=($(echo "${artifact}" | _ splitString ':'))
+            _ info "Destroying '${name}' managed infrastructure"
 
-            local region="${artifact[0]}"
-            local ami="${artifact[1]}"
+            local artifacts=(${PACKER_TEST_EBS_ARTIFACTS[$name]})
+            local artifact
 
-            {
-                local snapshots=()
-                local volumes=()
-                local localCode=0
+            for artifact in "${artifacts[@]}"
+            do
+                artifact=($(echo "${artifact}" | _ splitString ':'))
 
-                snapshots=($(
-                    AWS_DEFAULT_OUTPUT="json" aws --region "${region}" ec2 describe-images --image-ids "${ami}" \
-                        | jq -r '.Images | .[] | .BlockDeviceMappings | .[] | .Ebs.SnapshotId // empty'
-                )) || ((localCode++))
+                local region="${artifact[0]}"
+                local ami="${artifact[1]}"
 
-                if [[ ${#snapshots[@]} != 0 ]]
-                then
-                    volumes=($(
-                        AWS_DEFAULT_OUTPUT="json" aws --region "${region}" ec2 describe-snapshots --snapshot-ids \
-                        "$(_ join "snapshots" ' ')" | jq -r '.Snapshots | .[] | .VolumeId // empty'
+                {
+                    local snapshots=()
+                    local volumes=()
+                    local localCode=0
+
+                    snapshots=($(
+                        AWS_DEFAULT_OUTPUT="json" aws --region "${region}" ec2 describe-images --image-ids "${ami}" \
+                            | jq -r '.Images | .[] | .BlockDeviceMappings | .[] | .Ebs.SnapshotId // empty'
                     )) || ((localCode++))
-                fi
 
-                AWS_DEFAULT_OUTPUT="text" aws --region "${region}" ec2 deregister-image --image-id "${ami}" || ((localCode++))
+                    if [[ ${#snapshots[@]} != 0 ]]
+                    then
+                        volumes=($(
+                            AWS_DEFAULT_OUTPUT="json" aws --region "${region}" ec2 describe-snapshots --snapshot-ids \
+                            "$(_ join "snapshots" ' ')" | jq -r '.Snapshots | .[] | .VolumeId // empty'
+                        )) || ((localCode++))
+                    fi
 
-                for snapshot in "${snapshots[@]}"
-                do
-                    AWS_DEFAULT_OUTPUT="text" aws --region "${region}" ec2 delete-snapshot --snapshot-id "${snapshot}" || ((localCode++))
-                done
+                    AWS_DEFAULT_OUTPUT="text" aws --region "${region}" ec2 deregister-image --image-id "${ami}" || ((localCode++))
 
-                # NOTE: Packer users pre-built AMIs as the source for building
-                # images.  These source AMIs may include volumes that are not
-                # flagged to be destroyed on termiation of the instance building
-                # the new image. Packer will attempt to clean up all residual
-                # volumes that are not designated by the user to remain after
-                # termination. If you need to preserve those source volumes, you
-                # can overwrite the termination setting by specifying
-                # `delete_on_termination=false` in the `launch_device_mappings`
-                # block for the device.
+                    for snapshot in "${snapshots[@]}"
+                    do
+                        AWS_DEFAULT_OUTPUT="text" aws --region "${region}" ec2 delete-snapshot --snapshot-id "${snapshot}" || ((localCode++))
+                    done
 
-                for volume in "${volumes[@]}"
-                do
-                    AWS_DEFAULT_OUTPUT="text" aws --region "${region}" ec2 delete-volume --volume-id "${volume}" &> /dev/null || true
-                done
+                    # NOTE: Packer users pre-built AMIs as the source for building
+                    # images.  These source AMIs may include volumes that are not
+                    # flagged to be destroyed on termiation of the instance building
+                    # the new image. Packer will attempt to clean up all residual
+                    # volumes that are not designated by the user to remain after
+                    # termination. If you need to preserve those source volumes, you
+                    # can overwrite the termination setting by specifying
+                    # `delete_on_termination=false` in the `launch_device_mappings`
+                    # block for the device.
 
-                return "${localCode}"
-            } || ((exitCode++))
+                    for volume in "${volumes[@]}"
+                    do
+                        AWS_DEFAULT_OUTPUT="text" aws --region "${region}" ec2 delete-volume --volume-id "${volume}" &> /dev/null || true
+                    done
+
+                    return "${localCode}"
+                } || ((exitCode++))
+            done
+
+            rm -f "${PACKER_TEST_MANIFEST[$name]}" &> /dev/null || true
         done
 
-        rm -f "${PACKER_TEST_MANIFEST[$name]}" &> /dev/null || true
-    done
+        for name in "${!PACKER_TEST_CODE[@]}"
+        do
+            local code="${PACKER_TEST_CODE[$name]}"
 
-    for name in "${!PACKER_TEST_CODE[@]}"
-    do
-        local code="${PACKER_TEST_CODE[$name]}"
+            if (( code == 0 ))
+            then
+                _ info "Ok '${name}'"
+            else
+                _ error "Error '${name}'"
+                ((exitCode++))
+            fi
+        done
 
-        if (( code == 0 ))
-        then
-            _ info "Ok '${name}'"
-        else
-            _ error "Error '${name}'"
-            ((exitCode++))
-        fi
-    done
+        for name in "${!PACKER_TEST[@]}"
+        do
+            rm -rf "$(dirname "${PACKER_TEST[$name]}")/packer_cache"
+            rm -rf "$(dirname "${PACKER_TEST[$name]}")/builds"
+            rm -rf "$(dirname "${PACKER_TEST[$name]}")/output-virtualbox-iso"
+            rm -rf "$(dirname "${PACKER_TEST[$name]}")/.vagrant"
+        done
 
-    for name in "${!PACKER_TEST[@]}"
-    do
-        rm -rf "$(dirname "${PACKER_TEST[$name]}")/packer_cache"
-        rm -rf "$(dirname "${PACKER_TEST[$name]}")/builds"
-        rm -rf "$(dirname "${PACKER_TEST[$name]}")/output-virtualbox-iso"
-    done
-
-    exit "${exitCode}"
+        exit "${exitCode}"
+    fi
 }

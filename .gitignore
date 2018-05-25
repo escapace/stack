@@ -1,13 +1,12 @@
 .python-version
 ansible/inventory
 ansible/test.yml
-ansible/roles/*
-!ansible/roles/.gitkeep
-!ansible/roles/normalize
 drafts
 .secrets
 packer/*/manifest.json
 packer/*/*-manifest.json
+packer/workstation/output-virtualbox-iso
+packer/workstation/builds
 vendor/restic/*
 !vendor/restic/.gitkeep
 vendor/terraform/*
