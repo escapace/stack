@@ -54,16 +54,16 @@ stackPacker () {
             stackAmazonEBS "${template}" "${clean}"
             ;;
         virtualbox-iso)
-            specVagrant "${template}" "${type}" "${clean}"
+            stackVagrant "${template}" "${type}" "${clean}"
             ;;
         vmware-iso)
-            specVagrant "${template}" "${type}" "${clean}"
+            stackVagrant "${template}" "${type}" "${clean}"
             ;;
         hyperv-iso)
-            specVagrant "${template}" "${type}" "${clean}"
+            stackVagrant "${template}" "${type}" "${clean}"
             ;;
         qemu)
-            specVagrant "${template}" "${type}" "${clean}"
+            stackVagrant "${template}" "${type}" "${clean}"
             ;;
         *)
             error "stackPacker: Unsupported builder type '${type}'"
