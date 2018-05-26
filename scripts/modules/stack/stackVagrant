@@ -1,0 +1,80 @@
+#!/usr/bin/env bash
+#
+# vim: set ft=sh:
+#
+# @import console/error
+# @import console/info
+# @import lang/exists
+# @import lang/required
+# @import lang/truth
+
+stackVagrant () {
+    exists vagrant || {
+        error "stackVagrant: Cannot find vagrant"
+
+        return 1
+    }
+
+    local code=0
+    local directory
+    local template="$1"
+    local type="${2:-virtualbox-iso}"
+    local clean="${3:-true}"
+
+    [[ -f "${template}" ]] || {
+        error "stackVagrant: No such file or directory"
+
+        return 1
+    }
+
+    required "${template}" "${type}" || {
+        error "stackVagrant: ReferenceError - attempt is being made to access a variable that is not defined"
+
+        return 1
+    }
+
+    if [[ "${type}" == "virtualbox-iso" ]]
+    then
+        exists vboxmanage || {
+            error "stackVagrant: Cannot find vagrant"
+
+            return 1
+        }
+    elif [[ "${type}" == "vmware-iso" ]]
+    then
+        true
+    elif [[ "${type}" == "hyperv-iso" ]]
+    then
+        true
+    elif [[ "${type}" == "qemu" ]]
+    then
+        true
+    else
+        error "Unsupported builder type '${type}'"
+
+        return 1
+    fi
+
+    directory="$(dirname "${template}")"
+
+    (
+        cd "${directory}" || return 1
+
+        "${MANAGE_REPOSITORY}/vendor/packer/packer" build \
+            -only="${type}" \
+            -force \
+            "${template}" || return 1
+    ) || ((code++))
+
+    if truth "${clean}"
+    then
+        info "stackVagrant: Destroying build artifacts"
+
+        rm -rf "${directory}/packer_cache"
+        rm -rf "${directory}/builds"
+        rm -rf "${directory}/output-virtualbox-iso"
+        rm -rf "${directory}/.vagrant"
+    fi
+
+    return "${code}"
+}

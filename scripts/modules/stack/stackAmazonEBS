@@ -1,0 +1,135 @@
+#!/usr/bin/env bash
+#
+# vim: set ft=sh:
+#
+# @import console/error
+# @import console/warn
+# @import console/info
+# @import lang/exists
+# @import lang/required
+# @import lang/truth
+# @import string/splitString
+
+stackAmazonEBS () {
+    exists aws || {
+        error "stackAmazonEBS: Cannot find the AWS Command Line Interface (AWS CLI)"
+
+        return 1
+    }
+
+    local code=0
+    local directory
+    local template="$1"
+    local artifacts
+    local type="amazon-ebs"
+    local clean="${2:-true}"
+
+    [[ -f "${template}" ]] || {
+        error "stackAmazonEBS: No such file or directory"
+
+        return 1
+    }
+
+    required "${template}" "${type}" || {
+        error "stackAmazonEBS: ReferenceError - attempt is being made to access a variable that is not defined"
+
+        return 1
+    }
+
+    directory="$(dirname "${template}")"
+    manifest="${directory}/$(jq -r '."post-processors" | .[] | select(.type == "manifest") | .output // empty' < "${template}")" || {
+        error "stackAmazonEBS: Unable to parse manifest"
+
+        return 1
+    }
+
+    (
+        cd "${directory}" || return 1
+
+        rm -f "${manifest}" &> /dev/null || true
+
+        if [[ ! -d "$(dirname "${manifest}")" ]]
+        then
+            mkdir -p "$(dirname "${manifest}")"
+        fi
+
+        "${MANAGE_REPOSITORY}/vendor/packer/packer" build \
+            -only=amazon-ebs \
+            -force \
+            "${template}" || return 1
+
+        [[ -f "${manifest}" ]] || return 1
+    ) || ((code++))
+
+    artifacts="$(jq -r '.builds | .[] | select(.builder_type == "amazon-ebs") | .artifact_id // empty' < "${manifest}")" || ((code++))
+
+    if truth "${clean}"
+    then
+        info "stackAmazonEBS: Destroying build artifacts"
+        local artifact
+        local localCode=0
+
+        for artifact in "${artifacts[@]}"
+        do
+            artifact=($(echo "${artifact}" | splitString ':'))
+
+            local region="${artifact[0]}"
+            local ami="${artifact[1]}"
+            local snapshots=()
+            local volumes=()
+            local volume
+            local snapshot
+
+            snapshots=($(
+            AWS_DEFAULT_OUTPUT="json" aws --region "${region}" ec2 describe-images --image-ids "${ami}" \
+                | jq -r '.Images | .[] | .BlockDeviceMappings | .[] | .Ebs.SnapshotId // empty'
+            )) || ((localCode++))
+
+            if [[ ${#snapshots[@]} != 0 ]]
+            then
+                volumes=($(
+                AWS_DEFAULT_OUTPUT="json" aws --region "${region}" ec2 describe-snapshots --snapshot-ids \
+                    "${snapshots[@]}" | jq -r '.Snapshots | .[] | .VolumeId // empty'
+                )) || ((localCode++))
+            fi
+
+            AWS_DEFAULT_OUTPUT="text" aws --region "${region}" ec2 deregister-image --image-id "${ami}" || ((localCode++))
+
+            for snapshot in "${snapshots[@]}"
+            do
+                AWS_DEFAULT_OUTPUT="text" aws --region "${region}" ec2 delete-snapshot --snapshot-id "${snapshot}" || ((localCode++))
+            done
+
+            # NOTE: Packer users pre-built AMIs as the source for building
+            # images.  These source AMIs may include volumes that are not
+            # flagged to be destroyed on termiation of the instance building
+            # the new image. Packer will attempt to clean up all residual
+            # volumes that are not designated by the user to remain after
+            # termination. If you need to preserve those source volumes, you
+            # can overwrite the termination setting by specifying
+            # `delete_on_termination=false` in the `launch_device_mappings`
+            # block for the device.
+
+            for volume in "${volumes[@]}"
+            do
+                AWS_DEFAULT_OUTPUT="text" aws --region "${region}" ec2 delete-volume --volume-id "${volume}" &> /dev/null || true
+            done
+        done
+
+        if (( localCode == 0 ))
+        then
+            rm -f "${manifest}" &> /dev/null || true
+        else
+            error "stackAmazonEBS: failed to destroy build artifacts"
+
+            if [[ -f "${manifest}" ]]
+            then
+                warn "stackAmazonEBS: not removing '${manifest}' due to errors"
+            fi
+
+            ((code++))
+        fi
+    fi
+
+    return "${code}"
+}

@@ -1,0 +1,73 @@
+#!/usr/bin/env bash
+#
+# vim: set ft=sh:
+#
+# @import console/error
+# @import console/info
+# @import lang/exists
+# @import lang/required
+# @import lang/truth
+# @import github.com/escapace/stack-tools/hashicorp/downloadPacker
+# @import stack/stackAmazonEBS
+# @import stack/stackVagrant
+# @import path/absolutePath
+
+stackPacker () {
+    local directory
+    local template="$(absolutePath "${1}")"
+    local type="${2}"
+    local clean="${3:-true}"
+
+    if _ required "${STACK_CLEAN}"
+    then
+        clean="${STACK_CLEAN}"
+    fi
+
+    downloadPacker
+
+    exists jq || {
+        error "stackPacker: Cannot find jq"
+
+        return 1
+    }
+
+    required "${template}" "${type}" "${clean}" || {
+        error "stackPacker: ReferenceError - attempt is being made to access a variable that is not defined"
+
+        return 1
+    }
+
+    [[ -f "${template}" ]] || {
+        error "stackVagrant: No such file or directory"
+
+        return 1
+    }
+
+    directory="$(dirname "${template}")"
+
+    cd "${directory}" || return 1
+
+    "${MANAGE_REPOSITORY}/vendor/packer/packer" validate "${template}" || return 1
+
+    case "${type}" in
+        amazon-ebs)
+            stackAmazonEBS "${template}" "${clean}"
+            ;;
+        virtualbox-iso)
+            specVagrant "${template}" "${type}" "${clean}"
+            ;;
+        vmware-iso)
+            specVagrant "${template}" "${type}" "${clean}"
+            ;;
+        hyperv-iso)
+            specVagrant "${template}" "${type}" "${clean}"
+            ;;
+        qemu)
+            specVagrant "${template}" "${type}" "${clean}"
+            ;;
+        *)
+            error "stackPacker: Unsupported builder type '${type}'"
+
+            return 1
+    esac
+}

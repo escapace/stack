@@ -6,5 +6,5 @@
 # @import manage/manage
 
 main () {
-    STACK_NO_CLEAN=true _ manage test-packer "${@}"
+    STACK_CLEAN=false _ manage test-packer "${@}"
 }

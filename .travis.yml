@@ -38,5 +38,5 @@ matrix:
     script: "./manage test-terraform $NAME"
   - env: NAME="aws/secure-store"
     script: "./manage test-terraform $NAME"
-  - env: NAME="workstation/amazon-ebs"
-    script: "./manage test-packer $NAME"
+  - env: TEMPLATE="packer/workstation/amazon-ebs.json" TYPE="amazon-ebs"
+    script: "./manage test-packer $TEMPLATE $TYPE"
