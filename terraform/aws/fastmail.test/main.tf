@@ -1,10 +1,10 @@
 provider "aws" {}
 
 resource "random_string" "id" {
-  length = 8
-  lower = true
+  length  = 8
+  lower   = true
   special = false
-  upper = false
+  upper   = false
 
   lifecycle {
     create_before_destroy = true
@@ -20,8 +20,8 @@ resource "aws_route53_zone" "primary" {
 }
 
 module "fastmail" {
-  source             = "../fastmail"
-  name               = "${random_string.id.result}"
-  environment        = "${random_string.id.result}"
-  zone_id            = "${aws_route53_zone.primary.zone_id}"
+  source      = "../fastmail"
+  name        = "${random_string.id.result}"
+  environment = "${random_string.id.result}"
+  zone_id     = "${aws_route53_zone.primary.zone_id}"
 }

@@ -38,7 +38,7 @@ stackPacker () {
     }
 
     [[ -f "${template}" ]] || {
-        error "stackVagrant: No such file or directory"
+        error "stackPacker: No such file or directory"
 
         return 1
     }

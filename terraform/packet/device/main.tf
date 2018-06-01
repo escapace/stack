@@ -24,12 +24,12 @@ variable "volume_sizes" {
 
 variable "snapshot_frequency" {
   description = "The snapshot frequency"
-  default = "1month"
+  default     = "1month"
 }
 
 variable "snapshot_count" {
   description = "Keep n recent snapshots"
-  default = "3"
+  default     = "3"
 }
 
 resource "packet_reserved_ip_block" "eip" {
@@ -44,11 +44,12 @@ resource "packet_reserved_ip_block" "eip" {
 }
 
 resource "random_pet" "name" {
-  count = "${length(var.facilities)}"
+  count  = "${length(var.facilities)}"
   length = 3
+
   keepers = {
     cidr_notation = "${element(packet_reserved_ip_block.eip.*.cidr_notation, count.index)}"
-    project_id = "${var.project_id}"
+    project_id    = "${var.project_id}"
   }
 }
 

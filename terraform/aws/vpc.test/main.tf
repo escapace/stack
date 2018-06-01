@@ -50,21 +50,11 @@ EOF
   default = ["us-west-2a", "us-west-2b", "us-west-2c"]
 }
 
-resource "random_string" "id" {
-  length = 8
-  lower = true
-  special = false
-  upper = false
-
-  lifecycle {
-    create_before_destroy = true
-  }
-}
-
 module "vpc" {
   source             = "../vpc"
-  name               = "${random_string.id.result}"
-  environment        = "${random_string.id.result}"
+  name               = "vpc"
+  stage              = "testing"
+  namespace          = "travis"
   cidr_block         = "${var.cidr_block}"
   internal_subnets   = "${var.internal_subnets}"
   external_subnets   = "${var.external_subnets}"

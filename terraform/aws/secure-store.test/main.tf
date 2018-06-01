@@ -11,10 +11,10 @@ variable "region" {
 }
 
 resource "random_string" "id" {
-  length = 8
-  lower = true
+  length  = 8
+  lower   = true
   special = false
-  upper = false
+  upper   = false
 
   lifecycle {
     create_before_destroy = true
@@ -48,8 +48,8 @@ EOF
 }
 
 module "secure-store" {
-  source             = "../secure-store"
-  name               = "${random_string.id.result}"
-  environment        = "${random_string.id.result}"
-  role               = "${aws_iam_role.default_role.name}"
+  source      = "../secure-store"
+  name        = "${random_string.id.result}"
+  environment = "${random_string.id.result}"
+  role        = "${aws_iam_role.default_role.name}"
 }

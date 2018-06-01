@@ -2,37 +2,92 @@
 /* https://github.com/segmentio/stack. See SEGMENTIO-STACK-LICENSE license for */
 /* details. */
 
-variable "cidr_block" {
-  description = "The CIDR block for the VPC."
+variable "namespace" {
+  description = "Namespace, which could be your organization name"
+  type        = "string"
 }
 
-variable "external_subnets" {
-  description = "List of external subnets"
-  type        = "list"
-}
-
-variable "internal_subnets" {
-  description = "List of internal subnets"
-  type        = "list"
-}
-
-variable "environment" {
-  description = "Environment tag, e.g prod"
-}
-
-variable "availability_zones" {
-  description = "List of availability zones"
-  type        = "list"
+variable "stage" {
+  description = "Stage, e.g. 'prod', 'staging', 'dev', or 'test'"
+  type        = "string"
 }
 
 variable "name" {
-  description = "Name tag, e.g stack"
-  default     = "stack"
+  description = "Name  (e.g. `bastion` or `db`)"
+  type        = "string"
+}
+
+variable "delimiter" {
+  type        = "string"
+  default     = "-"
+  description = "Delimiter to be used between `name`, `namespace`, `stage`, etc."
+}
+
+variable "attributes" {
+  type        = "list"
+  default     = []
+  description = "Additional attributes (e.g. `policy` or `role`)"
+}
+
+variable "tags" {
+  type        = "map"
+  default     = {}
+  description = "Additional tags (e.g. map('BusinessUnit`,`XYZ`)"
+}
+
+//
+
+variable "cidr_block" {
+  description = <<EOF
+  the CIDR block to provision for the VPC, if set to something
+  other than the default, both internal_subnets and external_subnets have to be
+  defined as well
+EOF
+}
+
+variable "external_subnets" {
+  description = <<EOF
+  a list of CIDRs for external subnets in your VPC, must be set
+  if the cidr variable is defined, needs to have as many elements as there are
+  availability zones
+EOF
+
+  type = "list"
+}
+
+variable "internal_subnets" {
+  description = <<EOF
+  a list of CIDRs for internal subnets in your VPC, must be set
+  if the cidr variable is defined, needs to have as many elements as there are
+  availability zones
+EOF
+
+  type = "list"
+}
+
+variable "availability_zones" {
+  description = <<EOF
+  a comma-separated list of availability zones, defaults to all
+  AZ of the region, if set to something other than the defaults, both
+  internal_subnets and external_subnets have to be defined as well
+EOF
+
+  type = "list"
 }
 
 /**
 * VPC
 */
+
+module "label" {
+  source     = "../../generic/null-label"
+  namespace  = "${var.namespace}"
+  stage      = "${var.stage}"
+  name       = "${var.name}"
+  delimiter  = "${var.delimiter}"
+  attributes = "${var.attributes}"
+  tags       = "${var.tags}"
+}
 
 resource "aws_vpc" "main" {
   cidr_block                       = "${var.cidr_block}"
@@ -40,10 +95,7 @@ resource "aws_vpc" "main" {
   enable_dns_hostnames             = true
   assign_generated_ipv6_cidr_block = true
 
-  tags {
-    Name        = "${var.name}"
-    Environment = "${var.environment}"
-  }
+  tags = "${module.label.tags}"
 
   lifecycle {
     create_before_destroy = true
@@ -61,10 +113,7 @@ resource "aws_internet_gateway" "main" {
     create_before_destroy = true
   }
 
-  tags {
-    Name        = "${var.name}"
-    Environment = "${var.environment}"
-  }
+  tags = "${module.label.tags}"
 }
 
 resource "aws_nat_gateway" "main" {
@@ -100,11 +149,7 @@ resource "aws_subnet" "external" {
   assign_ipv6_address_on_creation = true
   ipv6_cidr_block                 = "${cidrsubnet(aws_vpc.main.ipv6_cidr_block, 8, count.index+length(var.external_subnets))}"
 
-  tags {
-    Name = "${var.name}"
-    Environment = "${var.environment}"
-    Placement = "${format("external-%03d", count.index+1)}"
-  }
+  tags = "${module.label.tags}"
 
   lifecycle {
     create_before_destroy = true
@@ -119,11 +164,7 @@ resource "aws_subnet" "internal" {
   assign_ipv6_address_on_creation = true
   ipv6_cidr_block                 = "${cidrsubnet(aws_vpc.main.ipv6_cidr_block, 8, count.index)}"
 
-  tags {
-    Name = "${var.name}"
-    Environment = "${var.environment}"
-    Placement = "${format("internal-%03d", count.index+1)}"
-  }
+  tags = "${module.label.tags}"
 
   lifecycle {
     create_before_destroy = true
@@ -147,10 +188,7 @@ resource "aws_route_table" "external" {
     gateway_id = "${aws_internet_gateway.main.id}"
   }
 
-  tags {
-    Name = "${var.name}"
-    Environment = "${var.environment}"
-  }
+  tags = "${module.label.tags}"
 
   lifecycle {
     create_before_destroy = true
@@ -173,11 +211,7 @@ resource "aws_route_table" "internal" {
     /* egress_only_gateway_id = "${aws_egress_only_internet_gateway.egress.id}" */
   }
 
-  tags {
-    Name = "${var.name}"
-    Environment = "${var.environment}"
-    Placement = "${format("internal-%03d", count.index+1)}"
-  }
+  tags = "${module.label.tags}"
 
   lifecycle {
     create_before_destroy = true

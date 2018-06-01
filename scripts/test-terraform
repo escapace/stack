@@ -2,136 +2,17 @@
 #
 # vim: set ft=sh:
 #
-# @description Run terraform configuration test(s)
+# @description Run packer configuration test(s)
+# @import stack/stackTerraform
 # @import lang/required
-# @import console/info
-# @import console/die
-# @import console/warn
-# @import console/error
-# @import console/die
-# @import string/upper
-
-declare -A TERRAFORM_TEST
-declare -A TERRAFORM_TEST_CODE
-
-spec ()
-{
-    local name="$1"
-    local directory="$2"
-    local code=0
-
-    _ info "Running '${name}' test..."
-
-    (
-        cd "${directory}" || return 1
-        rm -f "${directory}/terraform.tfstate" "${directory}/terraform.tfstate.backup" || true
-        rm -rf "${directory}/.terraform" || true
-
-        "${MANAGE_REPOSITORY}/vendor/terraform/terraform" init \
-            -force-copy \
-            -get=true \
-            -get-plugins=true \
-            -input=false || return 1
-
-        "${MANAGE_REPOSITORY}/vendor/terraform/terraform" apply \
-            -auto-approve=true \
-            -input=false || return 1
-    ) || code=$?
-
-    TERRAFORM_TEST_CODE["${name}"]="${code}"
-}
+# @dependency jq
 
 main ()
 {
     verbose true
     strict true
 
-    [ -f "${MANAGE_REPOSITORY}/vendor/terraform/terraform" ] || _ die "Download terraform first: ./manage download-terraform"
+    local module="$1"
 
-    local queue=($@)
-
-    if _ required "${TEST_SUITE}"
-    then
-        queue=(${TEST_SUITE})
-    fi
-
-    if [[ ${#queue[@]} != 0 ]]
-    then
-        local arg
-
-        for arg in "${queue[@]}"
-        do
-            local directory="${MANAGE_REPOSITORY}/terraform/${arg}.test"
-
-            if [ -d "${directory}" ] &&
-               [[ "$(basename "${directory}")" =~ ^[-_a-zA-Z0-9]*\.test$ ]]
-            then
-                local name
-                name="$(basename "${directory}")"
-                name="${name%.test}"
-                TERRAFORM_TEST["${name}"]="${directory}"
-            else
-                _ die "Invalid argument '${arg}'"
-            fi
-        done
-    else
-        while read -d '' -r directory
-        do
-            if [ -d "${directory}" ] &&
-               [[ "$(basename "${directory}")" =~ ^[-_a-zA-Z0-9]*\.test$ ]]
-            then
-                local name
-                name="$(basename "${directory}")"
-                name="${name%.test}"
-                TERRAFORM_TEST["${name}"]="${directory}"
-            fi
-        done < <(find "${MANAGE_REPOSITORY}/terraform" -maxdepth 2 -type d -print0 2> /dev/null)
-    fi
-
-    for name in "${!TERRAFORM_TEST[@]}"
-    do
-        spec "${name}" "${TERRAFORM_TEST[$name]}"
-    done
-}
-
-onExit ()
-{
-    local exitCode=0
-
-    for name in "${!TERRAFORM_TEST[@]}"
-    do
-        _ info "Destroying '${name}' managed infrastructure"
-
-        local directory="${TERRAFORM_TEST[$name]}"
-
-        (
-            local localCode=0
-            cd "${directory}" || ((localCode++))
-
-            "${MANAGE_REPOSITORY}/vendor/terraform/terraform" destroy -force || ((localCode++))
-
-            if (( localCode == 0 ))
-            then
-                rm -f "${directory}/terraform.tfstate" "${directory}/terraform.tfstate.backup" || true
-                rm -rf "${directory}/.terraform" || true
-            fi
-
-            return "${localCode}"
-        ) || ((exitCode++))
-    done
-
-    for name in "${!TERRAFORM_TEST_CODE[@]}"
-    do
-        local code="${TERRAFORM_TEST_CODE[$name]}"
-
-        if (( code == 0 ))
-        then
-            _ info "Ok '${name}'"
-        else
-            _ error "Error '${name}'"
-            ((exitCode++))
-        fi
-    done
-
-    exit "${exitCode}"
+    _ stackTerraform "${module}"
 }

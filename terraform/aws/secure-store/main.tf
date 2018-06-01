@@ -23,7 +23,7 @@ resource "aws_s3_bucket" "secure-store-logs" {
     id      = "log"
     enabled = true
 
-    prefix  = "log/"
+    prefix = "log/"
 
     transition {
       days          = 30
@@ -41,7 +41,7 @@ resource "aws_s3_bucket" "secure-store-logs" {
   }
 
   tags {
-    Name = "${var.name}"
+    Name        = "${var.name}"
     Environment = "${var.environment}"
   }
 
@@ -64,7 +64,7 @@ resource "aws_s3_bucket" "secure-store" {
   }
 
   tags {
-    Name = "${var.name}"
+    Name        = "${var.name}"
     Environment = "${var.environment}"
   }
 
@@ -73,10 +73,10 @@ resource "aws_s3_bucket" "secure-store" {
   }
 }
 
-
 resource "aws_iam_policy" "secure-store-policy" {
-    name = "secure-store-policy.${var.name}-${var.environment}"
-    policy = <<EOF
+  name = "secure-store-policy.${var.name}-${var.environment}"
+
+  policy = <<EOF
 {
   "Version": "2012-10-17",
   "Statement": [

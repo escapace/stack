@@ -1,0 +1,93 @@
+#!/usr/bin/env bash
+#
+# vim: set ft=sh:
+#
+# @import console/error
+# @import console/info
+# @import lang/exists
+# @import lang/required
+# @import lang/truth
+# @import github.com/escapace/stack-tools/hashicorp/downloadTerraform
+# @import stack/stackAmazonEBS
+# @import stack/stackVagrant
+# @import path/absolutePath
+
+stackTerraform () {
+    local module="$(absolutePath "${1}")"
+    local clean="${2:-true}"
+    local code=0
+
+    if _ required "${STACK_CLEAN}"
+    then
+        clean="${STACK_CLEAN}"
+    fi
+
+    downloadTerraform
+
+    exists jq || {
+        error "stackTerraform: Cannot find jq"
+
+        return 1
+    }
+
+    required "${module}" "${clean}" || {
+        error "stackTerraform: ReferenceError - attempt is being made to access a variable that is not defined"
+
+        return 1
+    }
+
+    [[ -d "${module}" ]] || {
+        error "stackTerraform: No such file or directory"
+
+        return 1
+    }
+
+    [[ -f "${module}/main.tf" ]] || {
+        error "stackTerraform: No such file or directory"
+
+        return 1
+    }
+
+    cd "${module}" || return 1
+
+    (
+        rm -f "${module}/terraform.tfstate" "${module}/terraform.tfstate.backup" || true
+        rm -rf "${module}/.terraform" || true
+
+        "${MANAGE_REPOSITORY}/vendor/terraform/terraform" init \
+            -force-copy \
+            -get=true \
+            -get-plugins=true \
+            -input=false || return 1
+
+        "${MANAGE_REPOSITORY}/vendor/terraform/terraform" validate "${module}" || return 1
+
+
+        "${MANAGE_REPOSITORY}/vendor/terraform/terraform" apply \
+            -auto-approve=true \
+            -input=false || return 1
+    ) || code=$?
+
+
+    if truth "${clean}"
+    then
+        info "stackAmazonEBS: Destroying build artifacts"
+
+        local localCode=0
+        cd "${module}" || ((localCode++))
+
+        "${MANAGE_REPOSITORY}/vendor/terraform/terraform" destroy -force || ((localCode++))
+
+        if (( localCode == 0 ))
+        then
+            rm -f "${module}/terraform.tfstate" "${module}/terraform.tfstate.backup" || true
+            rm -rf "${module}/.terraform" || true
+        else
+            error "stackTerraform: failed to destroy build artifacts"
+
+            ((code++))
+        fi
+    fi
+
+    return "${code}"
+}
