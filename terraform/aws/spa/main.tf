@@ -58,6 +58,14 @@ variable "origin_force_destroy" {
   default = "false"
 }
 
+variable "artifact_force_destroy" {
+  default = "true"
+}
+
+variable "log_force_destroy" {
+  default = "true"
+}
+
 variable "bucket_domain_format" {
   default = "%s.s3.amazonaws.com"
 }
@@ -201,6 +209,34 @@ variable "geo_restriction_locations" {
 * SPA
 */
 
+variable "github_username" {
+  type = "string"
+}
+
+variable "github_repo" {
+  type = "string"
+}
+
+variable "artifact_standard_transition_days" {
+  description = "Number of days to persist in the standard storage tier before moving to the infrequent access tier"
+  default     = "60"
+}
+
+variable "artifact_glacier_transition_days" {
+  description = "Number of days after which to move the data to the glacier storage tier"
+  default     = "90"
+}
+
+variable "artifact_expiration_days" {
+  description = "Number of days after which to expunge the objects"
+  default     = "120"
+}
+
+variable "codebuild_timeout" {
+  description = "How long in minutes, from 5 to 480 (8 hours), for AWS CodeBuild to wait until timing out any related build that does not get marked as completed."
+  default     = "60"
+}
+
 module "label" {
   source     = "../../generic/null-label"
   namespace  = "${var.namespace}"
@@ -273,12 +309,13 @@ module "logs" {
   stage                    = "${var.stage}"
   name                     = "${var.name}"
   delimiter                = "${var.delimiter}"
-  attributes               = ["${compact(concat(var.attributes, list("logs")))}"]
+  attributes               = "${var.attributes}"
   tags                     = "${var.tags}"
   prefix                   = "${var.log_prefix}"
   standard_transition_days = "${var.log_standard_transition_days}"
   glacier_transition_days  = "${var.log_glacier_transition_days}"
   expiration_days          = "${var.log_expiration_days}"
+  force_destroy            = "${var.log_force_destroy}"
 }
 
 resource "null_resource" "default" {
@@ -360,6 +397,281 @@ resource "aws_cloudfront_distribution" "default" {
   }
 
   tags = "${module.label.tags}"
+}
+
+// Pipeline
+
+module "codepipeline_label" {
+  source     = "../../generic/null-label"
+  namespace  = "${var.namespace}"
+  stage      = "${var.stage}"
+  name       = "${var.name}"
+  delimiter  = "${var.delimiter}"
+  attributes = ["${compact(concat(var.attributes, list("codepipeline")))}"]
+  tags       = "${var.tags}"
+}
+
+module "codebuild_label" {
+  source     = "../../generic/null-label"
+  namespace  = "${var.namespace}"
+  stage      = "${var.stage}"
+  name       = "${var.name}"
+  delimiter  = "${var.delimiter}"
+  attributes = ["${compact(concat(var.attributes, list("codebuild")))}"]
+  tags       = "${var.tags}"
+}
+
+resource "aws_s3_bucket" "codepipeline" {
+  bucket        = "${module.codepipeline_label.id}"
+  acl           = "private"
+  force_destroy = "${var.artifact_force_destroy}"
+  tags          = "${module.codepipeline_label.tags}"
+
+  lifecycle_rule {
+    id      = "${module.codepipeline_label.id}"
+    enabled = true
+    tags    = "${module.codepipeline_label.tags}"
+
+    transition {
+      days          = "${var.artifact_standard_transition_days}"
+      storage_class = "STANDARD_IA"
+    }
+
+    transition {
+      days          = "${var.artifact_glacier_transition_days}"
+      storage_class = "GLACIER"
+    }
+
+    expiration {
+      days = "${var.artifact_expiration_days}"
+    }
+  }
+}
+
+data "aws_iam_policy_document" "codepipeline_assume_policy" {
+  statement {
+    effect  = "Allow"
+    actions = ["sts:AssumeRole"]
+
+    principals {
+      type        = "Service"
+      identifiers = ["codepipeline.amazonaws.com"]
+    }
+  }
+}
+
+resource "aws_iam_role" "codepipeline_role" {
+  name               = "${module.codepipeline_label.id}"
+  assume_role_policy = "${data.aws_iam_policy_document.codepipeline_assume_policy.json}"
+}
+
+# CodePipeline policy needed to use CodeCommit and CodeBuild
+resource "aws_iam_role_policy" "attach_codepipeline_policy" {
+  name = "${module.codepipeline_label.id}"
+  role = "${aws_iam_role.codepipeline_role.id}"
+
+  policy = <<EOF
+{
+    "Statement": [
+        {
+            "Action": [
+                "s3:GetObject",
+                "s3:GetObjectVersion",
+                "s3:GetBucketVersioning",
+                "s3:PutObject"
+            ],
+            "Resource": [
+              "${aws_s3_bucket.codepipeline.arn}",
+              "${aws_s3_bucket.codepipeline.arn}/*"
+            ],
+            "Effect": "Allow"
+        },
+        {
+            "Action": [
+                "codebuild:BatchGetBuilds",
+                "codebuild:StartBuild"
+            ],
+            "Resource": "*",
+            "Effect": "Allow"
+        }
+    ],
+    "Version": "2012-10-17"
+}
+EOF
+}
+
+# CodeBuild IAM Permissions
+resource "aws_iam_role" "codebuild_assume_role" {
+  name = "${module.codebuild_label.id}"
+
+  assume_role_policy = <<EOF
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Principal": {
+        "Service": "codebuild.amazonaws.com"
+      },
+      "Action": "sts:AssumeRole"
+    }
+  ]
+}
+EOF
+}
+
+resource "aws_iam_role_policy" "codebuild_policy" {
+  name = "${module.codebuild_label.id}"
+  role = "${aws_iam_role.codebuild_assume_role.id}"
+
+  policy = <<POLICY
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Action": [
+       "s3:PutObject",
+       "s3:GetObject",
+       "s3:GetObjectVersion",
+       "s3:GetBucketVersioning"
+      ],
+      "Resource": [
+        "${aws_s3_bucket.codepipeline.arn}",
+        "${aws_s3_bucket.codepipeline.arn}/*"
+      ],
+      "Effect": "Allow"
+    },
+    {
+      "Action": [
+       "s3:*"
+      ],
+      "Resource": [
+        "${aws_s3_bucket.origin.arn}",
+        "${aws_s3_bucket.origin.arn}/*"
+      ],
+      "Effect": "Allow"
+    },
+    {
+      "Effect": "Allow",
+      "Action": [
+        "cloudfront:GetDistribution",
+        "cloudfront:GetDistributionConfig",
+        "cloudfront:ListDistributions",
+        "cloudfront:ListCloudFrontOriginAccessIdentities",
+        "cloudfront:CreateInvalidation",
+        "cloudfront:GetInvalidation",
+        "cloudfront:ListInvalidations"
+      ],
+      "Resource": [
+        "*"
+      ]
+    },
+    {
+      "Effect": "Allow",
+      "Resource": [
+        "${aws_codebuild_project.build_project.id}"
+      ],
+      "Action": [
+        "codebuild:*"
+      ]
+    },
+    {
+      "Effect": "Allow",
+      "Resource": [
+        "*"
+      ],
+      "Action": [
+        "logs:CreateLogGroup",
+        "logs:CreateLogStream",
+        "logs:PutLogEvents"
+      ]
+    }
+  ]
+}
+POLICY
+}
+
+# CodeBuild Section for the Package stage
+resource "aws_codebuild_project" "build_project" {
+  name          = "${module.codebuild_label.id}"
+  description   = "CodeBuild project for ${module.label.id}"
+  service_role  = "${aws_iam_role.codebuild_assume_role.arn}"
+  build_timeout = "${var.codebuild_timeout}"
+  tags          = "${module.codebuild_label.tags}"
+
+  artifacts {
+    type = "CODEPIPELINE"
+  }
+
+  environment {
+    compute_type = "BUILD_GENERAL1_SMALL"
+    image        = "aws/codebuild/nodejs:8.11.0"
+    type         = "LINUX_CONTAINER"
+
+    environment_variable {
+      "name"  = "AWS_S3_BUCKET"
+      "value" = "${null_resource.default.triggers.bucket}"
+    }
+
+    environment_variable {
+      "name"  = "AWS_CDN_DISTRIBUTION_ID"
+      "value" = "${aws_cloudfront_distribution.default.id}"
+    }
+  }
+
+  source {
+    type      = "CODEPIPELINE"
+    buildspec = "buildspec.yml"
+  }
+}
+
+# Full CodePipeline
+resource "aws_codepipeline" "codepipeline" {
+  name     = "${module.codepipeline_label.id}"
+  role_arn = "${aws_iam_role.codepipeline_role.arn}"
+
+  artifact_store = {
+    location = "${aws_s3_bucket.codepipeline.bucket}"
+    type     = "S3"
+  }
+
+  stage {
+    name = "Source"
+
+    action {
+      name             = "Source"
+      category         = "Source"
+      owner            = "ThirdParty"
+      provider         = "GitHub"
+      version          = "1"
+      output_artifacts = ["code"]
+
+      configuration {
+        Owner                = "${var.github_username}"
+        Repo                 = "${var.github_repo}"
+        Branch               = "master"
+        PollForSourceChanges = "true"
+      }
+    }
+  }
+
+  stage {
+    name = "DeployToS3"
+
+    action {
+      name             = "DeployToS3"
+      category         = "Test"
+      owner            = "AWS"
+      provider         = "CodeBuild"
+      input_artifacts  = ["code"]
+      output_artifacts = ["deployed"]
+      version          = "1"
+
+      configuration {
+        ProjectName = "${aws_codebuild_project.build_project.name}"
+      }
+    }
+  }
 }
 
 output "cf_id" {

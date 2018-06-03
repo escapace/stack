@@ -113,7 +113,7 @@ module "label" {
   stage      = "${var.stage}"
   name       = "${var.name}"
   delimiter  = "${var.delimiter}"
-  attributes = "${var.attributes}"
+  attributes = ["${compact(concat(var.attributes, list("logs")))}"]
   tags       = "${var.tags}"
 }
 
