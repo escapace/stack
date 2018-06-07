@@ -205,9 +205,7 @@ variable "geo_restriction_locations" {
 /*   default     = "" */
 /* } */
 
-/**
-* SPA
-*/
+// Codebuild
 
 variable "github_username" {
   type = "string"
@@ -215,6 +213,14 @@ variable "github_username" {
 
 variable "github_repo" {
   type = "string"
+}
+
+variable "github_branch" {
+  default = "master"
+}
+
+variable "github_poll" {
+  default = true
 }
 
 variable "artifact_standard_transition_days" {
@@ -236,6 +242,39 @@ variable "codebuild_timeout" {
   description = "How long in minutes, from 5 to 480 (8 hours), for AWS CodeBuild to wait until timing out any related build that does not get marked as completed."
   default     = "60"
 }
+
+// Encryption
+
+variable "log_sse_algorithm" {
+  description = "The server-side encryption algorithm to use. Valid values are AES256 and aws:kms"
+  default     = "AES256"
+}
+
+variable "log_kms_master_key_id" {
+  description = "The AWS KMS master key ID used for the SSE-KMS encryption. This can only be used when you set the value of sse_algorithm as aws:kms. The default aws/s3 AWS KMS master key is used if this element is absent while the sse_algorithm is aws:kms"
+  default     = ""
+}
+
+variable "origin_sse_algorithm" {
+  description = "The server-side encryption algorithm to use. Valid values are AES256 and aws:kms"
+  default     = "AES256"
+}
+
+variable "origin_kms_master_key_id" {
+  description = "The AWS KMS master key ID used for the SSE-KMS encryption. This can only be used when you set the value of sse_algorithm as aws:kms. The default aws/s3 AWS KMS master key is used if this element is absent while the sse_algorithm is aws:kms"
+  default     = ""
+}
+
+variable "artifact_sse_algorithm" {
+  description = "The server-side encryption algorithm to use. Valid values are AES256 and aws:kms"
+  default     = "AES256"
+}
+
+variable "artifact_kms_master_key_id" {
+  description = "The AWS KMS master key ID used for the SSE-KMS encryption. This can only be used when you set the value of sse_algorithm as aws:kms. The default aws/s3 AWS KMS master key is used if this element is absent while the sse_algorithm is aws:kms"
+  default     = ""
+}
+
 
 module "label" {
   source     = "../../generic/null-label"
@@ -301,6 +340,17 @@ resource "aws_s3_bucket" "origin" {
     expose_headers  = "${var.cors_expose_headers}"
     max_age_seconds = "${var.cors_max_age_seconds}"
   }
+
+  # https://docs.aws.amazon.com/AmazonS3/latest/dev/bucket-encryption.html
+  # https://www.terraform.io/docs/providers/aws/r/s3_bucket.html#enable-default-server-side-encryption
+  server_side_encryption_configuration {
+    rule {
+      apply_server_side_encryption_by_default {
+        sse_algorithm     = "${var.artifact_sse_algorithm}"
+        kms_master_key_id = "${var.artifact_kms_master_key_id}"
+      }
+    }
+  }
 }
 
 module "logs" {
@@ -316,6 +366,8 @@ module "logs" {
   glacier_transition_days  = "${var.log_glacier_transition_days}"
   expiration_days          = "${var.log_expiration_days}"
   force_destroy            = "${var.log_force_destroy}"
+  sse_algorithm            = "${var.log_sse_algorithm}"
+  kms_master_key_id        = "${var.log_kms_master_key_id}"
 }
 
 resource "null_resource" "default" {
@@ -444,6 +496,15 @@ resource "aws_s3_bucket" "codepipeline" {
 
     expiration {
       days = "${var.artifact_expiration_days}"
+    }
+  }
+
+  server_side_encryption_configuration {
+    rule {
+      apply_server_side_encryption_by_default {
+        sse_algorithm     = "${var.origin_sse_algorithm}"
+        kms_master_key_id = "${var.origin_kms_master_key_id}"
+      }
     }
   }
 }
@@ -649,17 +710,17 @@ resource "aws_codepipeline" "codepipeline" {
       configuration {
         Owner                = "${var.github_username}"
         Repo                 = "${var.github_repo}"
-        Branch               = "master"
-        PollForSourceChanges = "true"
+        Branch               = "${var.github_branch}"
+        PollForSourceChanges = "${var.github_poll}"
       }
     }
   }
 
   stage {
-    name = "DeployToS3"
+    name = "Deployment"
 
     action {
-      name             = "DeployToS3"
+      name             = "Deployment"
       category         = "Test"
       owner            = "AWS"
       provider         = "CodeBuild"
