@@ -275,7 +275,6 @@ variable "artifact_kms_master_key_id" {
   default     = ""
 }
 
-
 module "label" {
   source     = "../../generic/null-label"
   namespace  = "${var.namespace}"

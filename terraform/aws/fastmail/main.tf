@@ -65,21 +65,6 @@ resource "aws_route53_record" "spf_spf" {
   }
 }
 
-resource "aws_route53_record" "mesmtp_domainkey" {
-  zone_id = "${data.aws_route53_zone.zone.zone_id}"
-  name    = "mesmtp._domainkey"
-  type    = "CNAME"
-  ttl     = "300"
-
-  records = [
-    "mesmtp.${data.aws_route53_zone.zone.name}dkim.fmhosted.com.",
-  ]
-
-  lifecycle {
-    create_before_destroy = true
-  }
-}
-
 resource "aws_route53_record" "fm1_domainkey" {
   zone_id = "${data.aws_route53_zone.zone.zone_id}"
   name    = "fm1._domainkey"
