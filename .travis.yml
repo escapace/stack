@@ -43,10 +43,13 @@ matrix:
     script: "./manage test-terraform $MODULE"
   - env: MODULE="terraform/aws/log-storage.test"
     script: "./manage test-terraform $MODULE"
-  - env: MODULE="terraform/aws/spa.test"
-    script: "./manage test-terraform $MODULE"
+  # - env: MODULE="terraform/aws/spa.test"
+  #   script: "./manage test-terraform $MODULE"
   - env: TEMPLATE="packer/workstation/amazon-ebs.json" TYPE="amazon-ebs"
     script: "./manage test-packer $TEMPLATE $TYPE"
 notifications:
+  email: false
   slack:
+    on_success: change
+    on_failure: always
     secure: cgO75hyhD/gJ9S8C6R/Lox1d0s+2t1DpLOocq9dD4Y4KwfkWMJVSuPM4cG1uUf0RHNvAOhhjnPfwUcFcRttWIjO1CnjvKUPhoktMXcqjDCN7+0JpgSbEOFXpFQs+UpeT+lgEsTow63M88kVQnlTMwuVltqQN8idUShhaSaA0LMJdGnU6OoNrssaZqX28mtPsNRcFBaA00NqXDL8r8YIXy3ILq8zhXOckozUfTjRyrulM94K2zaEGQ4f1KhpBD9fJyju1yvaskWABBXd8foZqDdIKM6IyjbFACnpCYslwCydPUyRnW6tpvfYhjYHc7xEyhImaRASKS+0kBeSZK+zIxrvXBNBjLOEDX8jbzVr5ORAYgcD+S4qL5TlSFBxG4WPQyQv1ysw+Pnc814ztkBFTMB095szy97n6cvE2y7zsg1Jkk6cnXhF7GXqtNm9Zj7se/crb2C1QWhI0jaNrGsEcVwsoPHFk+vavke9Q8++VKmAx8CzIvgWAppEbXy7Bd8kd8jCwD8RFJHB6Rg2+MRTAcaEjN/aHOwiw9NhETRyH3QUzGA0O5mIzGabd9ithDB2WSMd2U0fDCbjQt23mVNSXOwrcbQv/PwLei06pEnxJQifEB78ORQxDfTE1icIcq+Y5DR7GzUFecStZVUGPYNWuDr6mpRjg9dNGu4Jaqk3oSEk=
