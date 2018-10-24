@@ -8,6 +8,6 @@ main ()
 {
     _ exists ansible || {
         _ exists pip || _ die 'command not found: pip'
-        pip install ansible==2.4.0.0
+        pip install ansible==2.7.0.0
     }
 }
