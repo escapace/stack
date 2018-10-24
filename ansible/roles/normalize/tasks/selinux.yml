@@ -2,15 +2,16 @@
 
 - name: install selinux dependencies
   yum:
-    name: "{{ item }}"
+    name: "{{ packages }}"
     state: present
-  with_items:
-    - libselinux
-    - libselinux-utils
-    - policycoreutils
-    - policycoreutils-python
-    - selinux-policy-minimum
-    - selinux-policy-targeted
+  vars:
+    packages:
+      - libselinux
+      - libselinux-utils
+      - policycoreutils
+      - policycoreutils-python
+      - selinux-policy-minimum
+      - selinux-policy-targeted
 
 - name: enforce selinux
   selinux:

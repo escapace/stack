@@ -46,15 +46,19 @@
   - normalize reboot needed
 
 - name: install dependencies
-  action: "{{ ansible_pkg_mgr }} name={{ item }} state=present"
-  with_items:
-    - iscsi-initiator-utils
-    - device-mapper-multipath
-    - e2fsprogs
-    - parted
-    - gdisk
-    - util-linux
-    - dracut
+  yum:
+    name: "{{ packages }}"
+    state: present
+    update_cache: yes
+  vars:
+    packages:
+      - iscsi-initiator-utils
+      - device-mapper-multipath
+      - e2fsprogs
+      - parted
+      - gdisk
+      - util-linux
+      - dracut
 
 - name: remove ifcfg-eth0
   file:

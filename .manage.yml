@@ -4,20 +4,15 @@ directories:
 
 # Environment variables
 env:
-  TERRAFORM_BINARY: "https://releases.hashicorp.com/terraform/0.11.7/terraform_0.11.7_linux_amd64.zip"
-  TERRAFORM_SHA256SUMS: "https://releases.hashicorp.com/terraform/0.11.7/terraform_0.11.7_SHA256SUMS"
-  TERRAFORM_SHA256SUMS_SIGNATURE: "https://releases.hashicorp.com/terraform/0.11.7/terraform_0.11.7_SHA256SUMS.sig"
-  PACKER_BINARY: "https://releases.hashicorp.com/packer/1.2.3/packer_1.2.3_linux_amd64.zip"
-  PACKER_SHA256SUMS: "https://releases.hashicorp.com/packer/1.2.3/packer_1.2.3_SHA256SUMS"
-  PACKER_SHA256SUMS_SIGNATURE: "https://releases.hashicorp.com/packer/1.2.3/packer_1.2.3_SHA256SUMS.sig"
-  RESTIC_BINARY: "https://github.com/restic/restic/releases/download/v0.7.3/restic_0.7.3_linux_amd64.bz2"
-  RESTIC_SHA256SUMS: "https://github.com/restic/restic/releases/download/v0.7.3/SHA256SUMS"
-  RESTIC_SHA256SUMS_SIGNATURE: "https://github.com/restic/restic/releases/download/v0.7.3/SHA256SUMS.asc"
+  TERRAFORM_VERSION: "0.11.8"
+  PACKER_VERSION: "1.3.1"
+  RESTIC_VERSION: "0.9.3"
   DOCKER_SCOPE: "testing"
 
 # Enable manage repository scripts
 enable:
   - help
+  - trust-escapace
 
 # Default script
 default: help
