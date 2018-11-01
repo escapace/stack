@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# @import github.com/escapace/stack-tools/hashicorp/downloadPacker
+# @import github.com/escapace/stack-tools hashicorp/downloadPacker
 # @description download and verify packer binary
 
 main ()

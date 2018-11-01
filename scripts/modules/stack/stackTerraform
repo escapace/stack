@@ -7,7 +7,7 @@
 # @import lang/exists
 # @import lang/required
 # @import lang/truth
-# @import github.com/escapace/stack-tools/hashicorp/downloadTerraform
+# @import github.com/escapace/stack-tools hashicorp/downloadTerraform
 # @import stack/stackAmazonEBS
 # @import stack/stackVagrant
 # @import path/absolutePath

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# @import github.com/escapace/stack-tools/hashicorp/downloadTerraform
+# @import github.com/escapace/stack-tools hashicorp/downloadTerraform
 # @description download and verify terraform binary
 
 main ()
