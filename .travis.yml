@@ -37,8 +37,6 @@ matrix:
     script: "./manage test-terraform $MODULE"
   - env: MODULE="terraform/aws/vpc"
     script: "./manage test-terraform $MODULE"
-  - env: MODULE="terraform/aws/secure-store"
-    script: "./manage test-terraform $MODULE"
   - env: MODULE="terraform/generic/null-label"
     script: "./manage test-terraform $MODULE"
   - env: TEMPLATE="packer/workstation/amazon-ebs.json" TYPE="amazon-ebs"
