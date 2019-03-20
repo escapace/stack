@@ -19,7 +19,7 @@ variable "volume_sizes" {
 }
 
 module "packer_device" {
-  source       = "../device"
+  source       = "../.."
   project_id   = "${var.PACKET_PROJECT_ID}"
   facilities   = "${var.facilities}"
   plans        = "${var.plans}"

@@ -51,7 +51,7 @@ EOF
 }
 
 module "vpc" {
-  source             = "../vpc"
+  source             = "../.."
   name               = "vpc"
   stage              = "testing"
   namespace          = "travis"

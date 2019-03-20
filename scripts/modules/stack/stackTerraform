@@ -4,6 +4,7 @@
 #
 # @import console/error
 # @import console/info
+# @import console/warn
 # @import lang/exists
 # @import lang/required
 # @import lang/truth
@@ -11,6 +12,7 @@
 # @import stack/stackAmazonEBS
 # @import stack/stackVagrant
 # @import path/absolutePath
+# @import path/relativePath
 
 stackTerraform () {
     local module="$(absolutePath "${1}")"
@@ -42,52 +44,75 @@ stackTerraform () {
         return 1
     }
 
+    [[ -d "${module}/tests" ]] || {
+        error "stackTerraform: No such file or directory"
+
+        return 1
+    }
+
     [[ -f "${module}/main.tf" ]] || {
         error "stackTerraform: No such file or directory"
 
         return 1
     }
 
-    cd "${module}" || return 1
+    while read -d '' -r directory
+    do
+        for test in "${directory}"/*
+        do
+            if [[ -f "${test}/main.tf" ]]
+            then
+                cd "${test}" || return 1
 
-    (
-        rm -f "${module}/terraform.tfstate" "${module}/terraform.tfstate.backup" || true
-        rm -rf "${module}/.terraform" || true
+                local short
+                short="$(relativePath "${test}" "${MANAGE_REPOSITORY}")"
 
-        "${MANAGE_REPOSITORY}/vendor/terraform/terraform" init \
-            -force-copy \
-            -get=true \
-            -get-plugins=true \
-            -input=false || return 1
+                info "${short}: running"
 
-        "${MANAGE_REPOSITORY}/vendor/terraform/terraform" validate "${module}" || return 1
+                (
+                    rm -f "${test}/terraform.tfstate" "${test}/terraform.tfstate.backup" || true
+                    rm -rf "${test}/.terraform" || true
+
+                    "${MANAGE_REPOSITORY}/vendor/terraform/terraform" init \
+                        -force-copy \
+                        -get=true \
+                        -get-plugins=true \
+                        -input=false || return 1
+
+                    "${MANAGE_REPOSITORY}/vendor/terraform/terraform" validate "${test}" || return 1
+
+                    "${MANAGE_REPOSITORY}/vendor/terraform/terraform" apply \
+                        -auto-approve=true \
+                        -input=false || return 1
+                ) || ((code++))
 
 
-        "${MANAGE_REPOSITORY}/vendor/terraform/terraform" apply \
-            -auto-approve=true \
-            -input=false || return 1
-    ) || code=$?
+                local localCode=0
 
+                if truth "${clean}"
+                then
+                    info "${short}: Destroying build artifacts"
 
-    if truth "${clean}"
-    then
-        info "stackAmazonEBS: Destroying build artifacts"
+                    cd "${test}" || ((localCode++))
 
-        local localCode=0
-        cd "${module}" || ((localCode++))
+                    "${MANAGE_REPOSITORY}/vendor/terraform/terraform" destroy -force || ((localCode++))
 
-        "${MANAGE_REPOSITORY}/vendor/terraform/terraform" destroy -force || ((localCode++))
+                    if (( localCode == 0 ))
+                    then
+                        rm -f "${test}/terraform.tfstate" "${test}/terraform.tfstate.backup" || true
+                        rm -rf "${test}/.terraform" || true
 
-        if (( localCode == 0 ))
-        then
-            rm -f "${module}/terraform.tfstate" "${module}/terraform.tfstate.backup" || true
-            rm -rf "${module}/.terraform" || true
-        else
-            error "stackTerraform: failed to destroy build artifacts"
+                        info "${short}: success"
+                    else
+                        error "${short}: failed to destroy build artifacts"
 
-            ((code++))
-        fi
-    fi
+                        ((code++))
+                    fi
+                fi
+            fi
+        done
+    done < <(find "${module}/tests" -type d ! -path "*.terraform*" -print0 2> /dev/null)
+
 
     return "${code}"
 }

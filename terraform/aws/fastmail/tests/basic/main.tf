@@ -20,7 +20,7 @@ resource "aws_route53_zone" "primary" {
 }
 
 module "fastmail" {
-  source      = "../fastmail"
+  source      = "../.."
   name        = "${random_string.id.result}"
   environment = "${random_string.id.result}"
   zone_id     = "${aws_route53_zone.primary.zone_id}"
