@@ -1,0 +1,40 @@
+#!/usr/bin/env bash
+#
+# vim: set ft=sh:
+#
+# @import console/error
+# @import path/absolutePath
+# @import path/relativePath
+# @import github.com/escapace/stack-tools hashicorp/downloadTerraform
+
+terraformInit () {
+    local module    
+    local short
+
+    module="$(absolutePath "${1}")"
+    short="$(relativePath "${module}" "${MANAGE_REPOSITORY}")"
+
+    [[ -d "${module}" ]] || {
+        error "${short}: No such file or directory"
+
+        return 1
+    }
+
+    downloadTerraform
+
+    (
+        cd "${module}" || return 1
+
+        {
+            "${MANAGE_REPOSITORY}/vendor/terraform/terraform" init \
+            -force-copy \
+            -get=true \
+            -get-plugins=true \
+            -input=false &> /dev/null 
+        } || return 1
+    ) || {
+        error "${short}: failed to initialize"
+
+        return 1
+    }
+}

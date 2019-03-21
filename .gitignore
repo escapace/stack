@@ -7,6 +7,8 @@ packer/*/manifest.json
 packer/*/*-manifest.json
 packer/workstation/output-virtualbox-iso
 packer/workstation/builds
+vendor/tflint/*
+!vendor/tflint/.gitkeep
 vendor/restic/*
 !vendor/restic/.gitkeep
 vendor/terraform/*

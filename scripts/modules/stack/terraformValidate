@@ -1,0 +1,46 @@
+#!/usr/bin/env bash
+#
+# vim: set ft=sh:
+#
+# @import console/error
+# @import path/absolutePath
+# @import path/relativePath
+# @import github.com/escapace/stack-tools hashicorp/downloadTerraform
+
+terraformValidate () {
+    local module    
+    local short
+
+    module="$(absolutePath "${1}")"
+    short="$(relativePath "${module}" "${MANAGE_REPOSITORY}")"
+
+    [[ -d "${module}" ]] || {
+        error "{short}: No such file or directory"
+
+        return 1
+    }
+
+    downloadTerraform
+    # downloadTflint
+
+    (
+        cd "${module}" || return 1
+
+        "${MANAGE_REPOSITORY}/vendor/terraform/terraform" fmt -write=true "${module}"  &> /dev/null || return 1
+        "${MANAGE_REPOSITORY}/vendor/terraform/terraform" validate -check-variables=false &> /dev/null || return 1
+
+        # TODO: https://github.com/wata727/tflint/pull/209
+        # while read -d '' -r file
+        # do
+        #     "${MANAGE_REPOSITORY}/vendor/tflint/tflint" -q "${file}" || {
+        #         error "${file}: failed to lint"
+        #
+        #         return 1
+        #     }
+        # done < <(find "${module}" -mindepth 1 -maxdepth 1 -name '*.tf' -type f ! -path "*.terraform*" -print0 2> /dev/null)
+    ) || {
+        error "${short}: failed to validate"
+
+        return 1
+    }
+}

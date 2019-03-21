@@ -4,3 +4,12 @@
 [submodule "terraform/generic/null-label"]
 	path = terraform/generic/null-label
 	url = https://github.com/escapace/terraform-null-label.git
+[submodule "terraform/aws/spa"]
+	path = terraform/aws/spa
+	url = https://github.com/escapace/terraform-aws-cloudfront-s3-cdn.git
+[submodule "terraform/aws/log-storage"]
+	path = terraform/aws/log-storage
+	url = https://github.com/escapace/terraform-aws-s3-log-storage.git
+[submodule "terraform/aws/route53-alias"]
+	path = terraform/aws/route53-alias
+	url = https://github.com/escapace/terraform-aws-route53-alias.git

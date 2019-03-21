@@ -5,6 +5,7 @@
 # @description Run packer configuration test(s)
 # @import stack/stackTerraform
 # @import lang/required
+# @import manage/manage
 # @dependency jq
 
 main ()
@@ -14,5 +15,6 @@ main ()
 
     local module="$1"
 
+    _ manage validate "${module}"
     _ stackTerraform "${module}"
 }

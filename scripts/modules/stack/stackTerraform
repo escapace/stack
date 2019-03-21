@@ -13,9 +13,14 @@
 # @import stack/stackVagrant
 # @import path/absolutePath
 # @import path/relativePath
+# @import stack/terraformInit
+# @import stack/terraformValidate
 
 stackTerraform () {
-    local module="$(absolutePath "${1}")"
+    local module
+    
+    module="$(absolutePath "${1}")"
+
     local clean="${2:-true}"
     local code=0
 
@@ -65,6 +70,7 @@ stackTerraform () {
                 cd "${test}" || return 1
 
                 local short
+
                 short="$(relativePath "${test}" "${MANAGE_REPOSITORY}")"
 
                 info "${short}: running"
@@ -73,19 +79,13 @@ stackTerraform () {
                     rm -f "${test}/terraform.tfstate" "${test}/terraform.tfstate.backup" || true
                     rm -rf "${test}/.terraform" || true
 
-                    "${MANAGE_REPOSITORY}/vendor/terraform/terraform" init \
-                        -force-copy \
-                        -get=true \
-                        -get-plugins=true \
-                        -input=false || return 1
-
-                    "${MANAGE_REPOSITORY}/vendor/terraform/terraform" validate "${test}" || return 1
+                    terraformInit "${test}" || return 1
+                    terraformValidate "${test}"  || return 1
 
                     "${MANAGE_REPOSITORY}/vendor/terraform/terraform" apply \
                         -auto-approve=true \
                         -input=false || return 1
-                ) || ((code++))
-
+                ) || ((++code))
 
                 local localCode=0
 
@@ -93,9 +93,9 @@ stackTerraform () {
                 then
                     info "${short}: Destroying build artifacts"
 
-                    cd "${test}" || ((localCode++))
+                    cd "${test}" || ((++localCode))
 
-                    "${MANAGE_REPOSITORY}/vendor/terraform/terraform" destroy -force || ((localCode++))
+                    "${MANAGE_REPOSITORY}/vendor/terraform/terraform" destroy -force || ((++localCode))
 
                     if (( localCode == 0 ))
                     then
@@ -106,13 +106,12 @@ stackTerraform () {
                     else
                         error "${short}: failed to destroy build artifacts"
 
-                        ((code++))
+                        ((++code))
                     fi
                 fi
             fi
         done
     done < <(find "${module}/tests" -type d ! -path "*.terraform*" -print0 2> /dev/null)
-
 
     return "${code}"
 }

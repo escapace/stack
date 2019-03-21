@@ -33,6 +33,8 @@ matrix:
   include:
   - env: MODULE="terraform/packet/device"
     script: "./manage test-terraform $MODULE"
+  - env: MODULE="terraform/aws/log-storage"
+    script: "./manage test-terraform $MODULE"
   - env: MODULE="terraform/aws/fastmail"
     script: "./manage test-terraform $MODULE"
   - env: MODULE="terraform/aws/vpc"
