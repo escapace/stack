@@ -57,7 +57,7 @@ resource "packet_device" "device" {
   count            = "${length(var.facilities)}"
   project_id       = "${var.project_id}"
   hostname         = "${element(random_pet.name.*.id, count.index)}"
-  facility         = "${element(var.facilities, count.index)}"
+  facilities       = ["${element(var.facilities, count.index)}"]
   plan             = "${element(var.plans, count.index)}"
   billing_cycle    = "hourly"
   operating_system = "centos_7"
