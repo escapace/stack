@@ -76,9 +76,6 @@ stackTerraform () {
                 info "${short}: running"
 
                 (
-                    rm -f "${test}/terraform.tfstate" "${test}/terraform.tfstate.backup" || true
-                    rm -rf "${test}/.terraform" || true
-
                     terraformInit "${test}" || return 1
                     terraformValidate "${test}"  || return 1
 

@@ -25,6 +25,8 @@ terraformInit () {
     (
         cd "${module}" || return 1
 
+        rm -rf "${module}/terraform.tfstate" "${module}/terraform.tfstate.backup" "${module}/.terraform" || true
+
         {
             "${MANAGE_REPOSITORY}/vendor/terraform/terraform" init \
             -force-copy \

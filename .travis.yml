@@ -41,6 +41,8 @@ matrix:
     script: "./manage test-terraform $MODULE"
   - env: MODULE="terraform/generic/null-label"
     script: "./manage test-terraform $MODULE"
+  - env: MODULE="terraform/aws/av-bucket"
+    script: "./manage test-terraform $MODULE"
   - env: TEMPLATE="packer/workstation/amazon-ebs.json" TYPE="amazon-ebs"
     script: "./manage test-packer $TEMPLATE $TYPE"
 notifications:
