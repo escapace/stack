@@ -2,7 +2,7 @@
 #
 # vim: set ft=sh:
 #
-# @description Build packer configuration(s)
+# @description Build packer images
 # @import manage/manage
 
 main () {

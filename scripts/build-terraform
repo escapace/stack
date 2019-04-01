@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+#
+# vim: set ft=sh:
+#
+# @description Build and/or change infrastructure
+# @import manage/manage
+
+main ()
+{
+    STACK_CLEAN=false _ manage test-terraform "${@}"
+}

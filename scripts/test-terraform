@@ -2,8 +2,8 @@
 #
 # vim: set ft=sh:
 #
-# @description Run packer configuration test(s)
-# @import stack/stackTerraform
+# @description Build and destroy infrastructre
+# @import github.com/escapace/stack-tools stack/stackTerraform
 # @import lang/required
 # @import manage/manage
 # @dependency jq

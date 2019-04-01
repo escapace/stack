@@ -7,8 +7,8 @@
 # @import path/relativePath
 # @import path/absolutePath
 # @import lang/required
-# @import stack/terraformInit stack/terraformValidate
-# @description Lint & validate terraform/packer configurations
+# @import github.com/escapace/stack-tools stack/terraformInit stack/terraformValidate
+# @description Validate configurations
 
 process () {
     local directory="$1"

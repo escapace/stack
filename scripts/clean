@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+#
+# vim: set ft=sh:
+# @description Delete residual files & folders
+
+
+main () {
+    verbose true
+    strict true
+
+    find . -name '.terraform' -type d -exec rm -rf '{}' \;
+}
