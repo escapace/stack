@@ -1,9 +1,12 @@
 # Environment variables
 env:
-  TERRAFORM_VERSION: "0.11.13"
+  GIT_USER_EMAIL: "security@escapace.com"
+  GIT_USER_NAME: "esceapace"
+  GIT_USER_SIGNINGKEY: "0xF29CCEBC83FD4525"
+  DOCKER_SCOPE: "escapace"
   PACKER_VERSION: "1.3.5"
   RESTIC_VERSION: "0.9.4"
-  DOCKER_SCOPE: "testing"
+  TERRAFORM_VERSION: "0.11.13"
 
 # Enable manage repository scripts
 enable:
