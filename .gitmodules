@@ -13,3 +13,6 @@
 [submodule "terraform/aws/route53-alias"]
 	path = terraform/aws/route53-alias
 	url = https://github.com/escapace/terraform-aws-route53-alias.git
+[submodule "terraform/aws/state-backend"]
+	path = terraform/aws/state-backend
+	url = https://github.com/escapace/terraform-aws-tfstate-backend.git
