@@ -1,8 +1,0 @@
-#!/usr/bin/env bash
-# @import github.com/escapace/stack-tools restic/downloadRestic
-# @description download and verify restic binary
-
-main ()
-{
-    _ downloadRestic
-}

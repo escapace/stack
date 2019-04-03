@@ -3,7 +3,6 @@
 # vim: set ft=sh:
 # @description Delete residual files & folders
 
-
 main () {
     verbose true
     strict true

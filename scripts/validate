@@ -7,81 +7,8 @@
 # @import path/relativePath
 # @import path/absolutePath
 # @import lang/required
-# @import github.com/escapace/stack-tools stack/terraformInit stack/terraformValidate
+# @import github.com/escapace/stack-tools stack/stackValidate
 # @description Validate configurations
-
-process () {
-    local directory="$1"
-    local code=0
-
-    if [[ ! -d ${directory} ]]
-    then
-        _ die "${directory}: No such directory"
-    fi
-
-    local proceed=false
-
-    # shellcheck disable=SC2034
-    while read -d '' -r files
-    do
-        proceed=true
-    done < <(find "${directory}" -mindepth 1 -maxdepth 1 -name '*.tf' -type f ! -path "*.terraform*" -print0 2> /dev/null)
-
-    if [[ "${proceed}" = "true" ]]
-    then
-        local short
-
-        short="$(_ relativePath "${directory}" "${MANAGE_REPOSITORY}")"
-
-        _ info "${short}: Processing"
-
-        {
-            _ terraformInit "${directory}"
-        } || (( ++code ))
-
-        if (( code == 0 ))
-        then
-            _ terraformValidate "${directory}" || (( ++code ))
-        fi
-
-        # Tests
-        if (( code == 0 ))
-        then
-            _ info "${short}: Ok"
-
-            while read -d '' -r test
-            do
-                if [[ -f "${test}/main.tf" ]]
-                then
-                    local localCode=0
-
-                    short="$(_ relativePath "${test}" "${MANAGE_REPOSITORY}")"
-
-                    _ info "${short}: Processing"
-
-                    _ terraformInit "${test}" || (( ++localCode ))
-
-                    if (( localCode == 0 ))
-                    then
-                        _ terraformValidate "${test}" || (( ++localCode ))
-                    fi
-
-                    if (( localCode == 0 ))
-                    then
-                        _ info "${short}: Ok"
-                    else
-                        (( ++code ))
-                    fi
-                fi
-            done < <(find "${directory}" -mindepth 2 -maxdepth 2 -type d ! -path "*.terraform*" -print0 2> /dev/null)
-        fi
-    fi
-
-    if (( code != 0 ))
-    then
-        return 1
-    fi
-}
 
 main () {
     verbose true
@@ -91,11 +18,11 @@ main () {
 
     if _ required "$1"
     then
-        process "$(_ absolutePath "${1}")" || (( ++code ))
+        _ stackValidate  "$(_ absolutePath "${1}")" || (( ++code ))
     else
         while read -d '' -r directory
         do
-            process "${directory}" || (( ++code ))
+            _ stackValidate "${directory}" || (( ++code ))
         done < <(find "${MANAGE_REPOSITORY}/terraform" -mindepth 2 -maxdepth 2 -type d ! -path "*.terraform*" -print0 2> /dev/null)
     fi
 

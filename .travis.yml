@@ -26,9 +26,6 @@ before_install:
 - mkdir -p ~/bin && curl -sSL -o ~/bin/jq $JQ_BINARY && chmod +x ~/bin/jq
 - export PATH=$PATH:~/bin
 - "./manage trust-escapace"
-- "./manage download-terraform"
-- "./manage download-packer"
-- "./manage download-restic"
 matrix:
   include:
   - env: MODULE="terraform/packet/device"
