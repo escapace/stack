@@ -1,11 +1,13 @@
-sudo: required
-language: python
-python:
-- '3.6'
+dist: xenial
 addons:
   apt:
     packages:
     - bc
+    - dirmngr
+sudo: required
+language: python
+python:
+- '3.6'
 services:
 - docker
 env:
