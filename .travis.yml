@@ -7,7 +7,7 @@ addons:
 sudo: required
 language: python
 python:
-- '3.6'
+- '3.7.4'
 services:
 - docker
 env:
@@ -22,7 +22,7 @@ env:
   - secure: MX8OXDdQ1fFOO17vm6j4LerYLvaHcFlIIpCnMASqdB6rmBYONT9nw9Nos4xtKeSWR2sewAzUhF8/wM80vyFxtKFWyJLqfQn0482mJ3vdwRC8yIiMj7hqd9SgV9L1Auk1x5K8eFXeZeo6TTf02oK22Cg+Ki+JY+Hd6WQUjYIODC4oQsMlfaQ5xTXl6VL/MMuZj8xFyKQWTXCR9vnw7qtctJwmk3jP1WxhbihuW9c8OJHWCf6dmn+uEZO4dIP2iU6vPpHKnzgepSKotYNF21PQTGjp7oSKg6MziqJxnd52hmi8OEGxYLY3i8R2sWTtBN49bLAjYdBaL3I96oYhQbSJIUZkW/y2vMPg5psvmwiEvrDNoX1EM2AYYbKxPYAlD3cbIOXZP/48m/RSwurmGTOi1gaSyyVx8EslxMJp8Gt1c9NCSp0RI00BWwXPLcWIltPrLzvoR0ztW1RNwxOwPSYTV3u7KqXBD4T/pR5w18ETrlpnL33y4y8BTNKzMgtaZZok7PPZ5zgPB/Ufuc3ocXHGwoo+d7NSZeRPiF5iLlTizHvtVGyJe5wxqGe289DvUN/+K5NQgq+vnyfGSL79rK/HmlzgWrxJmhopAoYyv42sMBntxTjc+vKI9WPt7w40yj/OABDLOPADho13jD4OuUodSwFI7DVzvDKs4m5E+NOMYWw=
   - secure: FGHr499dclbknOUX87VWCiwG1LnUZmzrMCBRxqUhAdMdrIAAdVV175fqBfpBhulLfTXVLwXYiIadBw1fCc1PlYIJiALyLXuTdWw83eOx+bgm+cCirx+Z3zztO0dPqtmruKW/Zd30wW+zAcMhhv+m9rGHNEVFJIJNCY7xFb/i8gmgBl9NNUUo7VTrPosNICp+N0rRFrXXhVqzeBm3brDIYrS+zEuU5/1OL4i2c125LDKgNmDY6VK/Ghwck3GMlipTKtAhsXNBOuZQ2OVeOdgQQdOK9Ozi7YSEZZteoUBFuothTLBDZ8u7/LZz0Rivum+ggT9A/4L74dnVDTsBu14yc6zxJYPAp+CR6PdDzaQlOEVH6FzObedsQam+isYYe1C12Cl2Fkj1tTgg9LF15RLdlitHZg32sKOLNrMAKMi0/GPPbnocSvTgri8qOlr3Kqoa/lE1xl1llruuzTAAAH6NJOyRue+BV/thhRpRDm7shUJPC3CcOdfg8EFInawiW5/0qlhyZbSeu6QosoGRc1JS2CGET/D9C3mqta9HziPFnaFjCOrn5voQSMy9gM77wt/LXgP9QcoNGnmVsHENAXd4An4BJQ9JxyuEzrAsP3hfUpcFCNNla1g28O0h4gPcRE7iW4pXyFQnx269H+7nTcMpHxIkSn+WLpNkaol4rCRj9fs=
 before_install:
-- pip install docker ansible==2.7.0 awscli --upgrade
+- pip install docker ansible==2.8.3 awscli --upgrade
 - sudo apt-get update -qq
 - sudo apt-get install -y -o Dpkg::Options::="--force-confnew" docker-ce
 - mkdir -p ~/bin && curl -sSL -o ~/bin/jq $JQ_BINARY && chmod +x ~/bin/jq
