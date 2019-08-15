@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# @description install ansible and roles
+# @description install requirements
 # @import lang/exists
 # @import console/die
 # @import console/info
@@ -8,6 +8,6 @@ main ()
 {
     _ exists ansible || {
         _ exists pip || _ die 'command not found: pip'
-        pip install ansible==2.7.0.0
+        pip install -r "${MANAGE_REPOSITORY}/requirements.txt"
     }
 }

@@ -23,7 +23,7 @@
         "ANSIBLE_RETRY_FILES_ENABLED=False",
         "ANSIBLE_SSH_ARGS='-o ForwardAgent=yes -o ControlMaster=auto -o ControlPersist=60s'"
       ],
-      "groups": ["provider=ec2"]
+      "groups": ["provider_ec2"]
     },
     {
       "type": "shell",
