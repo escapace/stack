@@ -5,6 +5,7 @@
 - include_tasks: yum.yml
 - include_tasks: user.yml
 - include_tasks: upgrade.yml
+- include_tasks: network-manager.yml
 
 - name: ensure lock directory is created
   file: path=/var/lock/subsys state=directory owner=root group=root mode=0755

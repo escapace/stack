@@ -31,7 +31,6 @@
     - grub2-mkconfig -o /etc/grub2.cfg
 
 - name: normalize reboot needed
-  when: provider in ["packet"]
   reboot:
     post_reboot_delay: "{{ normalize_reboot_delay | default(100) }}"
     # reboot_timeout: 3600

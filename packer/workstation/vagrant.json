@@ -77,7 +77,7 @@
         "<wait5><tab> text ks=hd:fd0:/ks.cfg<enter><wait5><esc>"
       ],
       "boot_wait": "10s",
-      "cpu": "{{ user `cpus` }}",
+      "cpus": "{{ user `cpus` }}",
       "disk_size": "{{user `disk_size`}}",
       "floppy_files": [
         "http/7/ks.cfg"
@@ -92,7 +92,7 @@
         "{{user `mirror`}}/{{user `mirror_directory`}}/{{user `iso_name`}}"
       ],
       "output_directory": "builds/packer-{{user `template`}}-hyperv",
-      "ram_size": "{{ user `memory` }}",
+      "memory": "{{ user `memory` }}",
       "shutdown_command": "echo 'vagrant' | sudo -S /sbin/halt -h -p",
       "ssh_password": "vagrant",
       "ssh_port": 22,
@@ -177,22 +177,22 @@
   ],
   "variables": {
     "access_token": "{{env `VAGRANT_ACCESS_TOKEN`}}",
-    "box_basename": "centos-7.5",
+    "box_basename": "centos-7.6",
     "build_timestamp": "{{isotime \"20060102150405\"}}",
     "cpus": "1",
     "disk_size": "20480",
     "git_revision": "__unknown_git_revision__",
     "hyperv_generation": "1",
     "hyperv_switch": "{{env `hyperv_switch`}}",
-    "iso_checksum": "714acc0aefb32b7d51b515e25546835e55a90da9fb00417fbee2d03a62801efd",
+    "iso_checksum": "38d5d51d9d100fd73df031ffd6bd8b1297ce24660dc8c13a3b8b4534a4bd291c",
     "iso_checksum_type": "sha256",
-    "iso_name": "CentOS-7-x86_64-Minimal-1804.iso",
+    "iso_name": "CentOS-7-x86_64-Minimal-1810.iso",
     "ks_path": "7/ks.cfg",
     "memory": "4096",
     "mirror": "http://mirrors.kernel.org/centos",
-    "mirror_directory": "7.5.1804/isos/x86_64",
-    "name": "centos-7.5",
-    "template": "centos-7.5-x86_64",
-    "version": "0.2.0"
+    "mirror_directory": "7.6.1810/isos/x86_64",
+    "name": "centos-7.6",
+    "template": "centos-7.6-x86_64",
+    "version": "0.3.0"
   }
 }

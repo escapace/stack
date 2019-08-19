@@ -32,8 +32,6 @@
     enabled: no
     masked: yes
   with_items:
-    - NetworkManager
-    - NetworkManager-wait-online
     - cloud-config
     - cloud-final
     - cloud-init
