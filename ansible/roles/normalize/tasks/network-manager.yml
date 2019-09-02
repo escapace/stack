@@ -1,0 +1,10 @@
+- name: disable NetworkManager services
+  service:
+    name: "{{ item }}"
+    enabled: no
+    masked: yes
+  with_items:
+    - NetworkManager
+    - NetworkManager-wait-online
+  notify:
+  - normalize reboot needed
