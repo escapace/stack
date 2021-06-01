@@ -1,4 +1,4 @@
-ansible==2.10.0
+ansible==2.10.7
 awscli
 docker
 netaddr
